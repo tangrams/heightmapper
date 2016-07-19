@@ -26,7 +26,7 @@ map = (function () {
 
     var layer = Tangram.leafletLayer({
         scene: 'scene.yaml',
-        // attribution: '<a href="https://mapzen.com/tangram" target="_blank">Tangram</a> | &copy; OSM contributors | <a href="https://mapzen.com/" target="_blank">Mapzen</a>'
+        attribution: 'Map by <a href="https://mapzen.com/tangram" target="_blank">Tangram</a> | <a href="https://github.com/tangram/heightmapper" target="_blank">Fork This</a>'
     });
 
     window.layer = layer;

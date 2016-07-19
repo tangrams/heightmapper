@@ -28,6 +28,10 @@
             position: absolute;
             z-index: 0;
         }
+
+        .mz-bug-container {
+            display: none;
+        }
     </style>
   </head>
 
@@ -56,7 +60,10 @@
     <!-- Mapzen map UI -->
     <script src='//mapzen.com/common/ui/mapzen-ui.min.js'></script>
     <script>
-      MPZN.bug();
+      MPZN.bug({
+        locate: false,
+        bug: false
+      });
     </script>
 
   </body>
