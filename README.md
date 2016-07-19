@@ -28,5 +28,7 @@ The slider numbers aren't quite right, I don't think the scaling is correct – 
 
 - fix the scale issue mentioned above
 - add a 'hide all UI' toggle key, maybe use 'H' because dat.gui is already using it
+- auto-exposure toggle button to set min and max values based on lowest and highest values in current view
 - add an 'export' button
 - **Extra Credit:** add an 'export zoom level' slider, to export at a higher resolution by fetching the appropriate tiles and stitching them together, maybe with a max_width (or max_filesize) parameter so you can export an array of Very Large Files
+- **Super Extra Credit:** further export options including lat/lon bounding boxes, country/boundary masking using OSM vector tiles
