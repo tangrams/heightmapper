@@ -4,7 +4,7 @@
 map = (function () {
     'use strict';
 
-    var map_start_location = [40.70531887544228, -74.00976419448853, 15]; // NYC
+    var map_start_location = [0, 0, 2];
 
     /*** URL parsing ***/
 
@@ -26,7 +26,7 @@ map = (function () {
 
     var layer = Tangram.leafletLayer({
         scene: 'scene.yaml',
-        attribution: '<a href="https://mapzen.com/tangram" target="_blank">Tangram</a> | &copy; OSM contributors | <a href="https://mapzen.com/" target="_blank">Mapzen</a>'
+        // attribution: '<a href="https://mapzen.com/tangram" target="_blank">Tangram</a> | &copy; OSM contributors | <a href="https://mapzen.com/" target="_blank">Mapzen</a>'
     });
 
     window.layer = layer;
@@ -43,14 +43,14 @@ map = (function () {
     function addGUI () {
         gui.domElement.parentNode.style.zIndex = 5; // make sure GUI is on top of map
         window.gui = gui;
-        gui.scale = 50.;
-        gui.add(gui, 'scale', 10., 60).onChange(function(value) {
-            scene.styles.hillshade.shaders.uniforms.u_scale = value;
+        gui.u_max = 8848.;
+        gui.add(gui, 'u_max', -10916., 8848).name("max elevation").onChange(function(value) {
+            scene.styles.hillshade.shaders.uniforms.u_max = value;
             scene.requestRedraw();
         });
-        gui.offset = -25;
-        gui.add(gui, 'offset', -50., 0).name("offset").onChange(function(value) {
-            scene.styles.hillshade.shaders.uniforms.u_offset = value;
+        gui.u_min = -10916.;
+        gui.add(gui, 'u_min', -10916., 8848).name("min elevation").onChange(function(value) {
+            scene.styles.hillshade.shaders.uniforms.u_min = value;
             scene.requestRedraw();
         });
     }
@@ -59,9 +59,8 @@ map = (function () {
 
     window.addEventListener('load', function () {
         // Scene initialized
-        console.log('?', layer);
         layer.on('init', function() {
-            gui = new dat.GUI({ autoPlace: true, hideable: false, width: 300 });
+            gui = new dat.GUI({ autoPlace: true, hideable: true, width: 300 });
             addGUI();
         });
         layer.addTo(map);

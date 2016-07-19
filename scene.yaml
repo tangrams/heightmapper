@@ -1,8 +1,4 @@
 sources:
-    osm: 
-        type: TopoJSON
-        url: https://vector.mapzen.com/osm/all/{z}/{x}/{y}.topojson?api_key=vector-tiles-JUsa0Gc
-        max_zoom: 16
     elevation:
         type: Raster
         url: https://terrain-preview.mapzen.com/terrarium/{z}/{x}/{y}.png
@@ -13,24 +9,22 @@ styles:
         base: raster
         shaders:
             uniforms:
-                u_scale: 50.
-                u_offset: -25.
+                u_max: 8848. # everest
+                u_min: -10916. # challenger deep
             blocks:
                 global: |
                     float unpack(vec4 h) {
                         return (h.r * 1. + h.g / 256. + h.b / 65536.);
                     }
                 color: |
-                    float height = unpack(color);
-                    color = vec4(1.0);
-                    
-                    // Color ramps
-                    vec3 colors[5];
-                    colors[0] = vec3(0.);
-                    colors[1] = vec3(1.);
-                                        
-                    color.rgb = mix(colors[0], colors[1], height * u_scale + u_offset);
+                    // unpack color and remove offset
+                    float height = unpack(color) * 65536. - 32768.;
 
+                    // normalize to [0. - 1.]
+                    float new_value = (height - u_min)/(u_max - u_min);
+
+                    color.rgb = vec3(new_value);
+                    color.a = 1.0;
 
 layers:
     terrain:
