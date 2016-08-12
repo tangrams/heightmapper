@@ -29,6 +29,75 @@ map = (function () {
         attribution: 'Map by <a href="https://mapzen.com/tangram" target="_blank">Tangram</a> | <a href="https://github.com/tangram/heightmapper" target="_blank">Fork This</a>'
     });
 
+    map.on("dragend", function (e) {
+        // console.log("DRAGEND", e); 
+        analyse();
+    });
+    
+    function debounce(func, wait, immediate) {
+        var timeout;
+        return function() {
+            var context = this, args = arguments;
+            var later = function() {
+                timeout = null;
+                if (!immediate) func.apply(context, args);
+            };
+            var callNow = immediate && !timeout;
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+            if (callNow) func.apply(context, args);
+        };
+    };
+
+    var zoomend = debounce(function(e) {
+        // console.log('debounce?')
+        // All the taxing stuff you do
+        // console.log("ZOOMEND", e);
+        analyse();
+    }, 100);
+
+    map.on("zoomend", function (e) { zoomend(e) });
+
+    function linkFromBlob(blob) {
+        var urlCreator = window.URL || window.webkitURL;
+        return urlCreator.createObjectURL( blob );
+    }
+
+    function analyse() {
+        scene.screenshot().then(function(screenshot) {
+            // window.open(screenshot.url);
+            console.log(screenshot)
+
+            var img = new Image();
+            // debugger;
+            img.onload = function(){
+                var myCanvas = document.createElement("canvas");
+                // console.log('img:', img)
+                myCanvas.width = img.width; 
+                myCanvas.height = img.height;
+                var ctx = myCanvas.getContext("2d"); // Get canvas 2d context
+                ctx.drawImage(img,0,0);
+                var min = 255;
+                var max = 0;
+                var pixel;
+                for (var w = 0; w < img.width; w++) {
+                    console.log(w);
+                    for (var h = 0; h < img.height; h++) {
+                    console.log(h);
+                        pixel = ctx.getImageData(w,h, 1, 1); // Read the pixel
+                        min = Math.min(min, pixel.data[0]);
+                        max = Math.max(max, pixel.data[0]);
+                    }
+
+                }
+                console.log('min, max:', min, max);
+            };
+
+            img.src = screenshot.url;
+
+        });
+    }
+
     window.layer = layer;
     var scene = layer.scene;
     window.scene = scene;
