@@ -162,7 +162,7 @@ map = (function () {
             scene.styles.hillshade.shaders.uniforms.u_min = value;
             scene.requestRedraw();
         });
-        gui.autoexpose = false;
+        gui.autoexpose = true;
         gui.add(gui, 'autoexpose').name("auto-exposure").onChange(function(value) {
             if (value) expose();
         });
