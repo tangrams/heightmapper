@@ -66,29 +66,26 @@ map = (function () {
     function analyse() {
         scene.screenshot().then(function(screenshot) {
             // window.open(screenshot.url);
-            console.log(screenshot)
+            // console.log(screenshot)
 
             var img = new Image();
             // debugger;
             img.onload = function(){
-                var myCanvas = document.createElement("canvas");
-                // console.log('img:', img)
-                myCanvas.width = img.width; 
-                myCanvas.height = img.height;
-                var ctx = myCanvas.getContext("2d"); // Get canvas 2d context
+                var tempCanvas = document.createElement("canvas");
+                tempCanvas.width = img.width; 
+                tempCanvas.height = img.height;
+                var ctx = tempCanvas.getContext("2d"); // Get canvas 2d context
                 ctx.drawImage(img,0,0);
                 var min = 255;
                 var max = 0;
                 var pixel;
-                for (var w = 0; w < img.width; w++) {
-                    console.log(w);
-                    for (var h = 0; h < img.height; h++) {
-                    console.log(h);
-                        pixel = ctx.getImageData(w,h, 1, 1); // Read the pixel
-                        min = Math.min(min, pixel.data[0]);
-                        max = Math.max(max, pixel.data[0]);
-                    }
-
+                var pixels = ctx.getImageData(0,0, img.width, img.height); // Read the pixel
+                // i += 4, because every 4th entry = the r value
+                for (var i = 0; i < img.height * img.width * 4; i += 4) {
+                    pixel = pixels.data[i];
+                    // console.log(pixel)
+                    min = Math.min(min, pixel);
+                    max = Math.max(max, pixel);
                 }
                 console.log('min, max:', min, max);
             };
