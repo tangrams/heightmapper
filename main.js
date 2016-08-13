@@ -76,7 +76,7 @@ map = (function () {
     }
 
     function expose() {
-        if (gui.autoexpose == false) return false;
+        if (typeof gui != 'undefined' && gui.autoexpose == false) return false;
         if (scene.initialized) {
             // ask for a redraw
             resetViewComplete();
