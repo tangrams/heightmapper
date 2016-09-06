@@ -124,10 +124,6 @@ map = (function () {
                 var range = (global_max - global_min);
                 gui.u_min = (min / 255) * range + global_min;
                 gui.u_max = (max / 255) * range + global_min;
-                // update dat.gui controllers
-                for (var i in gui.__controllers) {
-                    gui.__controllers[i].updateDisplay();
-                }
                 // update scale factor
 
 				// get the mercator meters per pixel for the current zoom level
@@ -148,8 +144,26 @@ map = (function () {
 				    return meters_per_pixel[z];
 				};
 
-				
+				// scale factor = how many pixels high is this elevation given the current zoom and range settings?
+				// multiply this by the width of your extract to get the z-height
+				var mpp = metersPerPixel(scene.view.zoom);
+				console.log('metersPerPixel:', mpp);
+				var zrange = (gui.u_max - gui.u_min);
+				console.log('zrange in meters:', zrange);
+				var zpx = zrange / mpp;
+				console.log('z in pixels:', zpx);
+				console.log('current width in meters:', scene.view.size.meters.x)
+				console.log('z in factors of x:', scene.view.size.meters.x / zrange)
+				var xscale = zrange / scene.view.size.meters.x;
+				// var zmeters = (gui.u_max - gui.u_min) / metersPerPixel(scene.view.zoom);
+				// var scale = (gui.u_max - gui.u_min) / metersPerPixel(scene.view.zoom);
+				gui.scaleFactor = xscale +''; // convert to string to make the display read-only
 
+				// update dat.gui controllers
+                for (var i in gui.__controllers) {
+                    gui.__controllers[i].updateDisplay();
+                }
+                
                 scene.styles.hillshade.shaders.uniforms.u_min = gui.u_min;
                 scene.styles.hillshade.shaders.uniforms.u_max = gui.u_max;
                 scene.requestRedraw();
@@ -185,7 +199,7 @@ map = (function () {
             scene.requestRedraw();
         });
         gui.scaleFactor = 1 +'';
-        gui.add(gui, 'scaleFactor').name("scale factor");
+        gui.add(gui, 'scaleFactor').name("x scale factor");
         gui.autoexpose = true;
         gui.add(gui, 'autoexpose').name("auto-exposure").onChange(function(value) {
             if (value) expose();
@@ -196,7 +210,7 @@ map = (function () {
             else global_min = 0;
         });
     }
-
+    window.gui = gui;
     /***** Render loop *****/
 
     window.addEventListener('load', function () {
