@@ -94,6 +94,7 @@ map = (function () {
                 scene.screenshot().then(function(screenshot) {
                     var img = new Image();
                     img.onload = function(){
+                        console.log('!')
                         var tempCanvas = document.createElement("canvas");
                         tempCanvas.width = img.width; 
                         tempCanvas.height = img.height;
@@ -116,10 +117,21 @@ map = (function () {
                         var range = (global_max - global_min);
                         gui.u_min = (min / 255) * range + global_min;
                         gui.u_max = (max / 255) * range + global_min;
+
+                        // get the width of the current view in meters
+                        // compare to the current elevation range in meters
+                        // the ratio is the "height" of the current scene compared to its width –
+                        // multiply it by the width of your 3D mesh to get the height
+
+                        var zrange = (gui.u_max - gui.u_min);
+                        var xscale = zrange / scene.view.size.meters.x;
+                        gui.scaleFactor = xscale +''; // convert to string to make the display read-only
+
                         // update dat.gui controllers
                         for (var i in gui.__controllers) {
                             gui.__controllers[i].updateDisplay();
                         }
+
                         scene.styles.hillshade.shaders.uniforms.u_min = gui.u_min;
                         scene.styles.hillshade.shaders.uniforms.u_max = gui.u_max;
                         scene.requestRedraw();
@@ -134,6 +146,7 @@ map = (function () {
                     img.src = screenshot.url;
 
                 });
+
             };
 
             curtainimg.src = curtainscreenshot.url;
@@ -177,6 +190,8 @@ map = (function () {
             scene.styles.hillshade.shaders.uniforms.u_min = value;
             scene.requestRedraw();
         });
+        gui.scaleFactor = 1 +'';
+        gui.add(gui, 'scaleFactor').name("scale factor");
         gui.autoexpose = true;
         gui.add(gui, 'autoexpose').name("auto-exposure").onChange(function(value) {
             if (value) expose();
@@ -187,8 +202,8 @@ map = (function () {
             else global_min = 0;
         });
         gui.export = function () {
-        	// button to open screenshot in a new tab – 'save as' to save to disk
-        	scene.screenshot().then(function(screenshot) { window.open(screenshot.url); });
+            // button to open screenshot in a new tab – 'save as' to save to disk
+            scene.screenshot().then(function(screenshot) { window.open(screenshot.url); });
         }
         gui.add(gui, 'export');
     }
