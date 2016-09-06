@@ -191,7 +191,7 @@ map = (function () {
             scene.requestRedraw();
         });
         gui.scaleFactor = 1 +'';
-        gui.add(gui, 'scaleFactor').name("x scale factor");
+        gui.add(gui, 'scaleFactor').name("z:x scale factor");
         gui.autoexpose = true;
         gui.add(gui, 'autoexpose').name("auto-exposure").onChange(function(value) {
             if (value) expose();
