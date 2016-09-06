@@ -128,6 +128,28 @@ map = (function () {
                 for (var i in gui.__controllers) {
                     gui.__controllers[i].updateDisplay();
                 }
+                // update scale factor
+
+				// get the mercator meters per pixel for the current zoom level
+				// multiply by the current vertical range to show how many vertical meters are represented
+				// compared to the size of the current view – in other words, how many pixels tall would the scene
+				// be – this must be taken into account when getting screengrabs – multiply the scale factor by the width
+				// of the screengrab to get the ratio of z-height to width for the exported 3d scene
+
+				var tile_size = 256;
+				var half_circumference_meters = 20037508.342789244;
+				var circumference_meters = half_circumference_meters * 2;
+
+				var min_zoom_meters_per_pixel = circumference_meters / tile_size; // min zoom draws world as 2 tiles wide
+
+				var meters_per_pixel = [];
+				function metersPerPixel (z) {
+				    meters_per_pixel[z] = meters_per_pixel[z] || min_zoom_meters_per_pixel / Math.pow(2, z);
+				    return meters_per_pixel[z];
+				};
+
+				
+
                 scene.styles.hillshade.shaders.uniforms.u_min = gui.u_min;
                 scene.styles.hillshade.shaders.uniforms.u_max = gui.u_max;
                 scene.requestRedraw();
@@ -162,6 +184,8 @@ map = (function () {
             scene.styles.hillshade.shaders.uniforms.u_min = value;
             scene.requestRedraw();
         });
+        gui.scaleFactor = 1 +'';
+        gui.add(gui, 'scaleFactor').name("scale factor");
         gui.autoexpose = true;
         gui.add(gui, 'autoexpose').name("auto-exposure").onChange(function(value) {
             if (value) expose();
