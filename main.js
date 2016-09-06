@@ -23,16 +23,13 @@ map = (function () {
     /*** Map ***/
 
     var map = L.map('map',
-        {"keyboardZoomOffset" : .05}
+        {"keyboardZoomOffset" : .05,
+        "inertiaDeceleration" : 10000}
     );
 
     var layer = Tangram.leafletLayer({
         scene: 'scene.yaml',
         attribution: 'Map by <a href="https://mapzen.com/tangram" target="_blank">Tangram</a> | <a href="https://github.com/tangram/heightmapper" target="_blank">Fork This</a>'
-    });
-
-    map.on("dragend", function (e) {
-        expose();
     });
     
     function debounce(func, wait, immediate) {
@@ -50,12 +47,6 @@ map = (function () {
         };
     };
 
-    var zoomend = debounce(function(e) {
-        expose();
-    }, 500);
-
-    map.on("zoomend", function (e) { zoomend(e) });
-
     function linkFromBlob(blob) {
         var urlCreator = window.URL || window.webkitURL;
         return urlCreator.createObjectURL( blob );
@@ -64,7 +55,6 @@ map = (function () {
     var viewComplete, viewCompleteResolve, viewCompleteReject;
 
     function resetViewComplete(frame) {
-        // console.log('resetViewComplete')
         viewComplete = new Promise(function(resolve, reject){
                 viewCompleteResolve = function(){
                     resolve();
@@ -214,7 +204,6 @@ map = (function () {
             scene.subscribe({
                 // trigger promise resolution
                 view_complete: function() {
-                    // console.log('view_complete triggered');
                     viewCompleteResolve();
                 }
             });
