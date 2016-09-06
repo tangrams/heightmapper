@@ -21,6 +21,16 @@
             padding: 0px;
         }
 
+        #curtain {
+            position: absolute;
+            pointer-events:none;
+            z-index: 800;
+        }
+
+        #curtain img {
+            width: 100%;
+        }
+
         #map {
             background: rgba(0, 0, 0, 0);
             height: 100%;
@@ -36,6 +46,7 @@
   </head>
 
   <body>
+    <div id="curtain"><img src=''></div>
     <div id="map"></div>
 
     <!-- 3rd party libraries -->
