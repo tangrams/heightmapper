@@ -23,16 +23,13 @@ map = (function () {
     /*** Map ***/
 
     var map = L.map('map',
-        {"keyboardZoomOffset" : .05}
+        {"keyboardZoomOffset" : .05,
+        "inertiaDeceleration" : 10000}
     );
 
     var layer = Tangram.leafletLayer({
         scene: 'scene.yaml',
         attribution: 'Map by <a href="https://mapzen.com/tangram" target="_blank">Tangram</a> | <a href="https://github.com/tangram/heightmapper" target="_blank">Fork This</a>'
-    });
-
-    map.on("dragend", function (e) {
-        expose();
     });
     
     function debounce(func, wait, immediate) {
@@ -50,12 +47,6 @@ map = (function () {
         };
     };
 
-    var zoomend = debounce(function(e) {
-        expose();
-    }, 500);
-
-    map.on("zoomend", function (e) { zoomend(e) });
-
     function linkFromBlob(blob) {
         var urlCreator = window.URL || window.webkitURL;
         return urlCreator.createObjectURL( blob );
@@ -64,7 +55,6 @@ map = (function () {
     var viewComplete, viewCompleteResolve, viewCompleteReject;
 
     function resetViewComplete(frame) {
-        // console.log('resetViewComplete')
         viewComplete = new Promise(function(resolve, reject){
                 viewCompleteResolve = function(){
                     resolve();
@@ -78,64 +68,89 @@ map = (function () {
     function expose() {
         if (typeof gui != 'undefined' && gui.autoexpose == false) return false;
         if (scene.initialized) {
-            // ask for a redraw
-            resetViewComplete();
-            Promise.all([scene.requestRedraw(), viewComplete]).then(function(){
-                analyse();
-            })
+            analyse();
         } else {
-            // wait for scene to initialize then
+            // wait for scene to initialize, then analyse
             scene.initializing.then(function() {
-                // ask for a redraw
-                Promise.all([scene.requestRedraw(), viewComplete]).then(function(){
-                    analyse();
-                })
+                analyse();
             });
         }
     }
-
+    window.expose = expose;
     function analyse() {
-        // set controls to max
-        scene.styles.hillshade.shaders.uniforms.u_min = global_min;
-        scene.styles.hillshade.shaders.uniforms.u_max = global_max;
-        scene.screenshot().then(function(screenshot) {
-            // window.open(screenshot.url);
-            var img = new Image();
-            img.onload = function(){
-                var tempCanvas = document.createElement("canvas");
-                tempCanvas.width = img.width; 
-                tempCanvas.height = img.height;
-                var ctx = tempCanvas.getContext("2d"); // Get canvas 2d context
-                ctx.drawImage(img,0,0);
-                var min = 255;
-                var max = 0;
-                var pixel;
-                var pixels = ctx.getImageData(0,0, img.width, img.height); // get all the pixels
-                var zeros = [];
-                // only sample the red value in [R, G, B, A]
-                for (var i = 0; i < img.height * img.width * 4; i += 4) {
-                    pixel = pixels.data[i];
-                    if (pixel == 0) zeros.push(i);
-                    min = Math.min(min, pixel);
-                    max = Math.max(max, pixel);
-                }
-                // console.log('min, max:', min, max);
-                // set u_min to min = 0
-                var range = (global_max - global_min);
-                gui.u_min = (min / 255) * range + global_min;
-                gui.u_max = (max / 255) * range + global_min;
-                // update dat.gui controllers
-                for (var i in gui.__controllers) {
-                    gui.__controllers[i].updateDisplay();
-                }
-                scene.styles.hillshade.shaders.uniforms.u_min = gui.u_min;
-                scene.styles.hillshade.shaders.uniforms.u_max = gui.u_max;
-                scene.requestRedraw();
+        var curtain = document.getElementById("curtain");
+        var curtainimg = curtain.getElementsByTagName('img')[0];
+
+        // save the current view to the curtain div and cover the canvas with it
+        scene.screenshot().then(function(curtainscreenshot) {
+            curtainimg.onload = function(){
+                // lower curtain
+                curtain.style.display = "block";
+                curtain.style.opacity = 1;
+            
+                // set controls to max
+                scene.styles.hillshade.shaders.uniforms.u_min = global_min;
+                scene.styles.hillshade.shaders.uniforms.u_max = global_max;
+                scene.screenshot().then(function(screenshot) {
+                    var img = new Image();
+                    img.onload = function(){
+                        var tempCanvas = document.createElement("canvas");
+                        tempCanvas.width = img.width; 
+                        tempCanvas.height = img.height;
+                        var ctx = tempCanvas.getContext("2d"); // Get canvas 2d context
+                        ctx.drawImage(img,0,0);
+                        var min = 255;
+                        var max = 0;
+                        var pixel;
+                        var pixels = ctx.getImageData(0,0, img.width, img.height); // get all the pixels
+                        var zeros = [];
+                        var stride = 3; // check every nth pixel, to speed up process
+                        // 4 = only sample the red value in [R, G, B, A]
+                        for (var i = 0; i < img.height * img.width * 4; i += 4 * stride) {
+                            pixel = pixels.data[i];
+                            if (pixel == 0) zeros.push(i);
+                            min = Math.min(min, pixel);
+                            max = Math.max(max, pixel);
+                        }
+                        // set u_min to min = 0
+                        var range = (global_max - global_min);
+                        gui.u_min = (min / 255) * range + global_min;
+                        gui.u_max = (max / 255) * range + global_min;
+                        // update dat.gui controllers
+                        for (var i in gui.__controllers) {
+                            gui.__controllers[i].updateDisplay();
+                        }
+                        scene.styles.hillshade.shaders.uniforms.u_min = gui.u_min;
+                        scene.styles.hillshade.shaders.uniforms.u_max = gui.u_max;
+                        scene.requestRedraw();
+
+                        Promise.all([scene.requestRedraw(), viewComplete]).then(function(){
+                            // raise curtain
+                            fade(curtain);
+                        })
+
+                    };
+
+                    img.src = screenshot.url;
+
+                });
             };
 
-            img.src = screenshot.url;
+            curtainimg.src = curtainscreenshot.url;
 
         });
+    }
+
+    function fade(element) {
+        var op = 1;  // initial opacity
+        var timer = setInterval(function () {
+            if (op <= 0.1){
+                clearInterval(timer);
+                curtain.style.display = "none";
+            }
+            element.style.opacity = op;
+            op -= op * 0.5;
+        }, 25);
     }
 
     window.layer = layer;
@@ -171,6 +186,11 @@ map = (function () {
             if (value) global_min = -10916;
             else global_min = 0;
         });
+        gui.export = function () {
+        	// button to open screenshot in a new tab – 'save as' to save to disk
+        	scene.screenshot().then(function(screenshot) { window.open(screenshot.url); });
+        }
+        gui.add(gui, 'export');
     }
 
     /***** Render loop *****/
@@ -184,7 +204,6 @@ map = (function () {
             scene.subscribe({
                 // trigger promise resolution
                 view_complete: function() {
-                    // console.log('view_complete triggered');
                     viewCompleteResolve();
                 }
             });
@@ -192,6 +211,16 @@ map = (function () {
 
         });
         layer.addTo(map);
+        // var tilePane = map.getPanes().tilePane
+        map._container.insertBefore(curtain, map._container.firstChild);
+
+        // debounce moveend event
+        var moveend = debounce(function(e) {
+            expose();
+        }, 100);
+
+        map.on("moveend", function (e) { moveend(e) });
+
     });
 
     return map;
