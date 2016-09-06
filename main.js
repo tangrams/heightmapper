@@ -196,6 +196,11 @@ map = (function () {
             if (value) global_min = -10916;
             else global_min = 0;
         });
+        gui.export = function () {
+        	// button to open screenshot in a new tab – 'save as' to save to disk
+        	scene.screenshot().then(function(screenshot) { window.open(screenshot.url); });
+        }
+        gui.add(gui, 'export');
     }
 
     /***** Render loop *****/
