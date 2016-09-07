@@ -66,6 +66,13 @@ map = (function () {
         }
     }
 
+    function updateGUI() {
+        // update dat.gui controllers
+        for (var i in gui.__controllers) {
+            gui.__controllers[i].updateDisplay();
+        }
+    }
+
     function analyse() {
         var curtain = document.getElementById("curtain");
         var curtainimg = curtain.getElementsByTagName('img')[0];
@@ -116,9 +123,7 @@ map = (function () {
                         gui.scaleFactor = xscale +''; // convert to string to make the display read-only
 
                         // update dat.gui controllers
-                        for (var i in gui.__controllers) {
-                            gui.__controllers[i].updateDisplay();
-                        }
+                        updateGUI();
 
                         scene.styles.hillshade.shaders.uniforms.u_min = gui.u_min;
                         scene.styles.hillshade.shaders.uniforms.u_max = gui.u_max;
@@ -183,12 +188,15 @@ map = (function () {
                 // store slider values
                 uminValue = gui.u_min;
                 umaxValue = gui.u_max;
-                // resetViewComplete();
                 expose();
             } else if (typeof uminValue != 'undefined') {
                 // retrieve slider values
+                scene.styles.hillshade.shaders.uniforms.u_min = uminValue;
+                scene.styles.hillshade.shaders.uniforms.u_max = umaxValue;
+                scene.requestRedraw();
                 gui.u_min = uminValue;
                 gui.u_max = umaxValue;
+                updateGUI();
             }
         });
         gui.include_oceans = false;
