@@ -14,6 +14,7 @@ Live demo: http://tangrams.github.io/heightmapper
 - Click "export" to open the current view as an image in a new tab - "Save As" to save the image to disk.
 - Import the resulting image as a "displacement map" in a 3D application to generate a 3D model of the terrain.
 - The "z:x scale factor" describes how "high" the current view is, on the z-axis, in terms of how wide the current view is on the x-axis. Multiplying this scale factor by the width of a 3D mesh in units x will tell you how high in units z your mesh should be after displacement in order to be true-scale.
+- Press the "h" ey to toggle UI visibility.
 
 ### Note
 
@@ -22,7 +23,6 @@ The slider numbers aren't quite right, I don't think the scaling is correct – 
 ### Todo
 
 - fix the scale issue mentioned above
-- add a 'hide all UI' toggle key, maybe use 'H' because dat.gui is already using it
 - add a GeoTIFF export option which includes metadata
 - add a toggle to show borders, labels, rivers, etc
 - **Extra Credit:** add an 'export zoom level' slider, to export at a higher resolution by fetching the appropriate tiles and stitching them together, maybe with a max_width (or max_filesize) parameter so you can export an array of Very Large Files
