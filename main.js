@@ -213,8 +213,14 @@ map = (function () {
             // button to open screenshot in a new tab – 'save as' to save to disk
             scene.screenshot().then(function(screenshot) { window.open(screenshot.url); });
         }
-        gui.__controllers[2].domElement.parentElement.style.pointerEvents = "none"
         gui.add(gui, 'export');
+        gui.help = function () {
+            // show help screen and input blocker
+            toggleHelp(true);
+        }
+        gui.add(gui, 'help');
+        // disable scale factor text field - it is output only
+        gui.__controllers[2].domElement.parentElement.style.pointerEvents = "none"
 
     }
 
@@ -226,6 +232,13 @@ map = (function () {
         gui.__controllers[0].domElement.parentElement.style.opacity = opacity;
         gui.__controllers[1].domElement.parentElement.style.pointerEvents = pointerEvents;
         gui.__controllers[1].domElement.parentElement.style.opacity = opacity;
+    }
+
+    // show and hide help screen
+    function toggleHelp(active) {
+        var visibility = active ? "visible" : "hidden";
+        document.getElementById('help').style.visibility = visibility;
+        document.getElementById('help-blocker').style.visibility = visibility;
     }
 
 
@@ -258,8 +271,12 @@ map = (function () {
 
         });
         layer.addTo(map);
-        // var tilePane = map.getPanes().tilePane
+        // tuck curtain between leaflet controls and map
         map._container.insertBefore(curtain, map._container.firstChild);
+
+        // bind help div onclicks
+        document.getElementById('help').onclick = function(){toggleHelp(false)};
+        document.getElementById('help-blocker').onclick = function(){toggleHelp(false)};
 
         // debounce moveend event
         var moveend = debounce(function(e) {
