@@ -13,7 +13,7 @@ Live demo: http://tangrams.github.io/heightmapper
 - Uncheck "auto-expose" to set min and max height levels manually.
 - Click "export" to open the current view as an image in a new tab - "Save As" to save the image to disk.
 - Import the resulting image as a "displacement map" in a 3D application to generate a 3D model of the terrain.
-- The "z:x scale factor" describes how "high" the current view is, on the z-axis, in terms of how wide the current view is on the x-axis. Multiplying this number by the width of a similarly-sized 3D mesh will tell you how high in z units your mesh should be after displacement.
+- The "z:x scale factor" describes how "high" the current view is, on the z-axis, in terms of how wide the current view is on the x-axis. Multiplying this scale factor by the width of a 3D mesh in units x will tell you how high in units z your mesh should be after displacement in order to be true-scale.
 
 ### Note
 
