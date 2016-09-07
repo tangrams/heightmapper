@@ -9,6 +9,7 @@ map = (function () {
     var global_max = 8848;
     var uminValue, umaxValue; // storage
     var scene_loaded = false;
+    var moving = false;
 
     /*** URL parsing ***/
 
@@ -34,6 +35,7 @@ map = (function () {
         attribution: 'Map by <a href="https://mapzen.com/tangram" target="_blank">Tangram</a> | <a href="https://github.com/tangram/heightmapper" target="_blank">Fork This</a>'
     });
     
+    // from https://davidwalsh.name/javascript-debounce-function
     function debounce(func, wait, immediate) {
         var timeout;
         return function() {
@@ -265,7 +267,7 @@ map = (function () {
                 // and also manually by the moveend event
                 view_complete: function() {
                     // perform analysis
-                    expose();
+                    if (!moving) expose();
                 }
             });
             scene_loaded = true;
@@ -284,11 +286,13 @@ map = (function () {
 
         // debounce moveend event
         var moveend = debounce(function(e) {
+            moving = false;
             // manually reset view_complete
             scene.resetViewComplete();
             scene.requestRedraw();
         }, 100);
 
+        map.on("movestart", function (e) { moving = true; });
         map.on("moveend", function (e) { moveend(e) });
 
     });
