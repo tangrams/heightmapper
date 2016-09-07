@@ -7,6 +7,7 @@ map = (function () {
     var map_start_location = [0, 0, 2];
     var global_min = 0;
     var global_max = 8848;
+    var uminValue, umaxValue; // storage
 
     /*** URL parsing ***/
 
@@ -141,12 +142,13 @@ map = (function () {
                         scene.styles.hillshade.shaders.uniforms.u_max = gui.u_max;
                         scene.requestRedraw();
 
+                        // redraw with new settings
                         Promise.all([scene.requestRedraw(), viewComplete]).then(function(){
                             // raise curtain
                             fade(curtain);
                             resetViewComplete();
 
-                        })
+                        });
 
                     };
 
@@ -202,7 +204,17 @@ map = (function () {
         gui.autoexpose = true;
         gui.add(gui, 'autoexpose').name("auto-exposure").onChange(function(value) {
             sliderState(!value);
-            if (value) expose();
+            if (value) {
+                // store slider values
+                uminValue = gui.u_min;
+                umaxValue = gui.u_max;
+                // resetViewComplete();
+                expose();
+            } else if (typeof uminValue != 'undefined') {
+                // retrieve slider values
+                gui.u_min = uminValue;
+                gui.u_max = umaxValue;
+            }
         });
         gui.include_oceans = false;
         gui.add(gui, 'include_oceans').name("include ocean data").onChange(function(value) {
