@@ -8,6 +8,7 @@ map = (function () {
     var global_min = 0;
     var global_max = 8848;
     var uminValue, umaxValue; // storage
+    var scene_loaded = false;
 
     /*** URL parsing ***/
 
@@ -53,37 +54,18 @@ map = (function () {
         return urlCreator.createObjectURL( blob );
     }
 
-    var viewComplete, viewCompleteResolve, viewCompleteReject;
-
-    function resetViewComplete(frame) {
-        viewComplete = new Promise(function(resolve, reject){
-                viewCompleteResolve = function(){
-                    resolve();
-                };
-                viewCompleteReject = function(e){
-                    reject();
-                };
-            });
-    }
-
     function expose() {
         if (typeof gui != 'undefined' && gui.autoexpose == false) return false;
-        if (scene.initialized) {
-            // wait for scene to draw
-            Promise.all([scene.requestRedraw(), viewComplete]).then(function(){
-                analyse();
-            });
+        if (scene_loaded) {
+            analyse();
         } else {
-            // wait for scene to initialize, then
-              scene.initializing.then(function() {
-                // wait for scene to draw
-                Promise.all([scene.requestRedraw(), viewComplete]).then(function(){
-                    analyse();
-                });
+            // wait for scene to initialize first
+            scene.initializing.then(function() {
+                analyse();
             });
         }
     }
-    window.expose = expose;
+
     function analyse() {
         var curtain = document.getElementById("curtain");
         var curtainimg = curtain.getElementsByTagName('img')[0];
@@ -140,16 +122,9 @@ map = (function () {
 
                         scene.styles.hillshade.shaders.uniforms.u_min = gui.u_min;
                         scene.styles.hillshade.shaders.uniforms.u_max = gui.u_max;
-                        scene.requestRedraw();
-
                         // redraw with new settings
-                        Promise.all([scene.requestRedraw(), viewComplete]).then(function(){
-                            // raise curtain
-                            fade(curtain);
-                            resetViewComplete();
-
-                        });
-
+                        scene.requestRedraw();
+                        fadeOut(curtain);
                     };
 
                     img.src = screenshot.url;
@@ -163,12 +138,12 @@ map = (function () {
         });
     }
 
-    function fade(element) {
+    function fadeOut(element) {
         var op = 1;  // initial opacity
         var timer = setInterval(function () {
             if (op <= 0.1){
                 clearInterval(timer);
-                curtain.style.display = "none";
+                element.style.display = "none";
             }
             element.style.opacity = op;
             op -= op * 0.5;
@@ -261,6 +236,7 @@ map = (function () {
             // toggle UI
             var display = map._controlContainer.style.display;
             map._controlContainer.style.display = (display === "none") ? "block" : "none";
+            document.getElementsByClassName('dg')[0].style.display = (display === "none") ? "block" : "none";
         }
     };
 
@@ -271,18 +247,22 @@ map = (function () {
         layer.on('init', function() {
             gui = new dat.GUI({ autoPlace: true, hideable: true, width: 300 });
             addGUI();
-            resetViewComplete();
+            // resetViewComplete();
             scene.subscribe({
-                // trigger promise resolution
+                // will be triggered when tiles are finished loading
+                // and also manually by the moveend event
                 view_complete: function() {
-                    viewCompleteResolve();
+                    // perform analysis
+                    expose();
                 }
             });
+            scene_loaded = true;
 
             sliderState(false);
 
         });
         layer.addTo(map);
+
         // tuck curtain between leaflet controls and map
         map._container.insertBefore(curtain, map._container.firstChild);
 
@@ -292,7 +272,9 @@ map = (function () {
 
         // debounce moveend event
         var moveend = debounce(function(e) {
-            expose();
+            // manually reset view_complete
+            scene.resetViewComplete();
+            scene.requestRedraw();
         }, 100);
 
         map.on("moveend", function (e) { moveend(e) });
