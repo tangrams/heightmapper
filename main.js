@@ -100,7 +100,6 @@ map = (function () {
                 scene.screenshot().then(function(screenshot) {
                     var img = new Image();
                     img.onload = function(){
-                        console.log('!')
                         var tempCanvas = document.createElement("canvas");
                         tempCanvas.width = img.width; 
                         tempCanvas.height = img.height;
@@ -202,6 +201,7 @@ map = (function () {
         gui.add(gui, 'scaleFactor').name("z:x scale factor");
         gui.autoexpose = true;
         gui.add(gui, 'autoexpose').name("auto-exposure").onChange(function(value) {
+            sliderState(!value);
             if (value) expose();
         });
         gui.include_oceans = false;
@@ -213,9 +213,20 @@ map = (function () {
             // button to open screenshot in a new tab – 'save as' to save to disk
             scene.screenshot().then(function(screenshot) { window.open(screenshot.url); });
         }
+        gui.__controllers[2].domElement.parentElement.style.pointerEvents = "none"
         gui.add(gui, 'export');
+
     }
-    window.gui = gui;
+
+    function sliderState(active) {
+        var pointerEvents = active ? "auto" : "none";
+        var opacity = active ? 1. : .5;
+        gui.__controllers[0].domElement.parentElement.style.pointerEvents = pointerEvents;
+        gui.__controllers[0].domElement.parentElement.style.opacity = opacity;
+        gui.__controllers[1].domElement.parentElement.style.pointerEvents = pointerEvents;
+        gui.__controllers[1].domElement.parentElement.style.opacity = opacity;
+    }
+
     /***** Render loop *****/
 
     window.addEventListener('load', function () {
@@ -231,6 +242,7 @@ map = (function () {
                 }
             });
 
+            sliderState(false);
 
         });
         layer.addTo(map);
