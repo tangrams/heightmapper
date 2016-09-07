@@ -7,6 +7,7 @@ map = (function () {
     var map_start_location = [0, 0, 2];
     var global_min = 0;
     var global_max = 8848;
+    var uminValue, umaxValue; // storage
 
     /*** URL parsing ***/
 
@@ -67,16 +68,25 @@ map = (function () {
 
     function expose() {
         if (typeof gui != 'undefined' && gui.autoexpose == false) return false;
-        if (scene.initialized) {
+        if (scene.dirty === false) {
+	    	console.log('not dirty');
+	    	viewCompleteResolve();
+        	analyse();
+        } else if (scene.initialized) {
+    	    	console.log('expose1')
+    	    	console.log(viewComplete)
             // wait for scene to draw
             Promise.all([scene.requestRedraw(), viewComplete]).then(function(){
+    	    	console.log('expose1')
                 analyse();
             });
         } else {
+    	    	console.log('expose2?')
             // wait for scene to initialize, then
               scene.initializing.then(function() {
                 // wait for scene to draw
                 Promise.all([scene.requestRedraw(), viewComplete]).then(function(){
+    				console.log('expose2')
                     analyse();
                 });
             });
@@ -139,8 +149,11 @@ map = (function () {
 
                         scene.styles.hillshade.shaders.uniforms.u_min = gui.u_min;
                         scene.styles.hillshade.shaders.uniforms.u_max = gui.u_max;
-                        scene.requestRedraw();
+                        // scene.requestRedraw();
 
+                        resetViewComplete();
+                    	console.log('viewcomplete:', viewComplete);
+						// redraw with new settings
                         Promise.all([scene.requestRedraw(), viewComplete]).then(function(){
                             // raise curtain
                             fade(curtain);
@@ -202,7 +215,17 @@ map = (function () {
         gui.autoexpose = true;
         gui.add(gui, 'autoexpose').name("auto-exposure").onChange(function(value) {
             sliderState(!value);
-            if (value) expose();
+            if (value) {
+	        	// store slider values
+	        	uminValue = gui.u_min;
+	        	umaxValue = gui.u_max;
+	        	resetViewComplete();
+            	expose();
+            } else if (typeof uminValue != 'undefined') {
+	        	// retrieve slider values
+	        	gui.u_min = uminValue;
+	        	gui.u_max = umaxValue;
+            }
         });
         gui.include_oceans = false;
         gui.add(gui, 'include_oceans').name("include ocean data").onChange(function(value) {
