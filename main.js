@@ -68,11 +68,17 @@ map = (function () {
     function expose() {
         if (typeof gui != 'undefined' && gui.autoexpose == false) return false;
         if (scene.initialized) {
-            analyse();
-        } else {
-            // wait for scene to initialize, then analyse
-            scene.initializing.then(function() {
+            // wait for scene to draw
+            Promise.all([scene.requestRedraw(), viewComplete]).then(function(){
                 analyse();
+            });
+        } else {
+            // wait for scene to initialize, then
+              scene.initializing.then(function() {
+                // wait for scene to draw
+                Promise.all([scene.requestRedraw(), viewComplete]).then(function(){
+                    analyse();
+                });
             });
         }
     }
@@ -139,6 +145,8 @@ map = (function () {
                         Promise.all([scene.requestRedraw(), viewComplete]).then(function(){
                             // raise curtain
                             fade(curtain);
+                            resetViewComplete();
+
                         })
 
                     };
