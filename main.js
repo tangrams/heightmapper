@@ -218,6 +218,7 @@ map = (function () {
 
     }
 
+    // disable sliders when autoexpose is on
     function sliderState(active) {
         var pointerEvents = active ? "auto" : "none";
         var opacity = active ? 1. : .5;
@@ -226,6 +227,17 @@ map = (function () {
         gui.__controllers[1].domElement.parentElement.style.pointerEvents = pointerEvents;
         gui.__controllers[1].domElement.parentElement.style.opacity = opacity;
     }
+
+
+    document.onkeypress = function (e) {
+        e = e || window.event;
+        // listen for "h"
+        if (e.which == 104) {
+            // toggle UI
+            var display = map._controlContainer.style.display;
+            map._controlContainer.style.display = (display === "none") ? "block" : "none";
+        }
+    };
 
     /***** Render loop *****/
 
