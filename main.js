@@ -101,7 +101,8 @@ map = (function () {
                         var pixel;
                         var pixels = ctx.getImageData(0,0, img.width, img.height); // get all the pixels
                         var zeros = [];
-                        var stride = 3; // check every nth pixel, to speed up process
+                        // only check every nth pixel (vary with browser size)
+                        var stride = Math.round(img.height * img.width / 1000000);
                         // 4 = only sample the red value in [R, G, B, A]
                         for (var i = 0; i < img.height * img.width * 4; i += 4 * stride) {
                             pixel = pixels.data[i];
