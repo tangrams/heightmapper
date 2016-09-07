@@ -246,7 +246,7 @@ map = (function () {
     document.onkeypress = function (e) {
         e = e || window.event;
         // listen for "h"
-        if (e.which == 104) {
+        if (e.which == 104 && document.activeElement != document.getElementsByClassName('leaflet-pelias-input')[0]) {
             // toggle UI
             var display = map._controlContainer.style.display;
             map._controlContainer.style.display = (display === "none") ? "block" : "none";
