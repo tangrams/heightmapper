@@ -81,6 +81,7 @@ map = (function () {
         scene.screenshot().then(function(curtainscreenshot) {
             curtainimg.onload = function(){
                 // lower curtain
+                curtain.style.backgroundImage = "url('"+curtainscreenshot.url+"')";
                 curtain.style.display = "block";
                 curtain.style.opacity = 1;
             
@@ -132,6 +133,7 @@ map = (function () {
                         fadeOut(curtain);
                     };
 
+                    window.URL.revokeObjectURL(curtainscreenshot.url);
                     img.src = screenshot.url;
 
                 });
@@ -139,6 +141,7 @@ map = (function () {
             };
 
             curtainimg.src = curtainscreenshot.url;
+            // console.log('url:('+curtainscreenshot.url+')')
 
         });
     }
