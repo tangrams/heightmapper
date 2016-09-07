@@ -218,8 +218,8 @@ map = (function () {
             toggleHelp(true);
         }
         gui.add(gui, 'help');
-        // disable scale factor text field - it is output only
-        gui.__controllers[2].domElement.parentElement.style.pointerEvents = "none"
+        // set scale factor text field to be uneditable but still selectable (for copying)
+        gui.__controllers[2].domElement.firstChild.setAttribute("readonly", true);
 
     }
 
