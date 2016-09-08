@@ -209,6 +209,8 @@ map = (function () {
         gui.add(gui, 'include_oceans').name("include ocean data").onChange(function(value) {
             if (value) global_min = -10916;
             else global_min = 0;
+            scene.styles.hillshade.shaders.uniforms.u_min = uminValue;
+            expose();
         });
         gui.export = function () {
             // button to open screenshot in a new tab – 'save as' to save to disk
