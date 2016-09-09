@@ -1,45 +1,46 @@
 To use a heightmap from Heightmapper as a displacement map in Blender:
 
-Enter the following keys, in order – make sure your cursor is over the main viewport before you begin.
+First, note the "z:x scale factor" in the Heightmapper. Then, enter the following keys, in order – make sure your cursor is over the main viewport before you begin.
 
 1. Start with a new scene.
 
 2. Delete the startup cube:
- - `x`
- - `return`
+ - type `x`
+ - type `return`
 
 3. Create a grid:
- - `shift-a`
- - `m`
- - `g`
+ - type `shift-a`
+ - type `m`
+ - type `g`
 
-4. Enter number of divisions (this can be any number, but these steps will make one vertex per pixel in the heightmap) (click nowhere! just start typing):
+4. Enter number of divisions (this can be any number, but these steps will make one vertex per pixel in the heightmap):
+ - in the "Add Grid" pane on the left, click in the "X Subdivisions" field
  - enter number of x pixels in heightmap minus 2
- - `tab`
+ - enter `tab`
  - enter number of y pixels in heightmap minus 2
 
 5. Scale to match image:
- - `s`
+ - type `s`
  - enter the number of x pixels / 1000
- - `tab`
+ - enter `tab`
  - enter y pixels / 1000
- - `tab`
- - enter `1` (for z-scale)
- - `return`
+ - enter `tab`
+ - type `1` (for z-scale)
+ - type `return`
 
 6. Add displacement modifier:
- - tools menu (wrench)
- - "add modifier"
- - deform > displace
- - texture: new
- - "show texture in texture tab" - far right button
- - "open"
- - select file
+ - in the right pane, click the tools menu (wrench icon) <img width="338" alt="tools" src="https://cloud.githubusercontent.com/assets/459970/18403007/5e8dfcee-76b0-11e6-8990-5628e0e58a20.png">
+ - click "add modifier"
+ - click Deform > Displace
+ - click Texture > "New" <img width="317" alt="new texture" src="https://cloud.githubusercontent.com/assets/459970/18403044/95223112-76b0-11e6-96ed-076ae9ae6a1e.png">
+ - click "Show texture in texture tab" (far right button) <img width="318" alt="show texture" src="https://cloud.githubusercontent.com/assets/459970/18403092/cf169cf0-76b0-11e6-83b2-5ed3354bda42.png">
+ - click "Open" <img width="333" alt="open image" src="https://cloud.githubusercontent.com/assets/459970/18403105/ec1ecd86-76b0-11e6-8898-da727db14219.png">
+ - select the heightmap file
 
 7. Scale displacement:
- - select displacement modifier
- - edit scale
- - set scale to be x-scale * "z:x scale factor"
+ - Click the tools menu (wrench icon)
+ - Set "Midlevel" to `0` <img width="333" alt="open image" src="https://cloud.githubusercontent.com/assets/459970/18403105/ec1ecd86-76b0-11e6-8898-da727db14219.png">
+ - Set "Strength" to be the x-scale multiplied by the "z:x scale factor"
 
 ### Printing
 
