@@ -113,6 +113,8 @@ map = (function () {
                             min = Math.min(min, pixel);
                             max = Math.max(max, pixel);
                         }
+                        // prevent min and max from being the same value
+                        max = (max == min) ? (max + 1) : max;
                         // set u_min to min = 0
                         var range = (global_max - global_min);
                         gui.u_min = (min / 255) * range + global_min;
