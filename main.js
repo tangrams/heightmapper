@@ -292,7 +292,7 @@ map = (function () {
             // manually reset view_complete
             scene.resetViewComplete();
             scene.requestRedraw();
-        }, 100);
+        }, 500);
 
         map.on("movestart", function (e) { moving = true; });
         map.on("moveend", function (e) { moveend(e) });

@@ -9,16 +9,17 @@ styles:
         base: raster
         shaders:
             uniforms:
-                u_max: 8848. # everest
-                u_min: -10916. # challenger deep
+                # set min and max to the levels used by the tiles team
+                u_max: 8900. # everest = 8848
+                u_min: -11000. # challenger deep = -10916
             blocks:
                 global: |
                     float unpack(vec4 h) {
-                        return (h.r * 1. + h.g / 256. + h.b / 65536.);
+                        return (h.r * 256. + h.g + h.b / 256.) * 255. - 32768.;
                     }
                 color: |
                     // unpack color and remove offset
-                    float height = unpack(color) * 65536. - 32768. - 128.;
+                    float height = unpack(color);
 
                     // normalize to [0. - 1.]
                     float new_value = (height - u_min)/(u_max - u_min);
