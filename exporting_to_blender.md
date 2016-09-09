@@ -29,17 +29,17 @@ First, note the "z:x scale factor" in the Heightmapper. Then, enter the followin
  - type `return`
 
 6. Add displacement modifier:
- - in the right pane, click the tools menu (wrench icon) <img width="338" alt="tools" src="https://cloud.githubusercontent.com/assets/459970/18403007/5e8dfcee-76b0-11e6-8990-5628e0e58a20.png">
+ - in the right pane, click the tools menu (wrench icon)<br><img width="338" alt="tools" src="https://cloud.githubusercontent.com/assets/459970/18403007/5e8dfcee-76b0-11e6-8990-5628e0e58a20.png">
  - click "add modifier"
  - click Deform > Displace
- - click Texture > "New" <img width="317" alt="new texture" src="https://cloud.githubusercontent.com/assets/459970/18403044/95223112-76b0-11e6-96ed-076ae9ae6a1e.png">
- - click "Show texture in texture tab" (far right button) <img width="318" alt="show texture" src="https://cloud.githubusercontent.com/assets/459970/18403092/cf169cf0-76b0-11e6-83b2-5ed3354bda42.png">
- - click "Open" <img width="333" alt="open image" src="https://cloud.githubusercontent.com/assets/459970/18403105/ec1ecd86-76b0-11e6-8898-da727db14219.png">
+ - click Texture > "New"<br><img width="317" alt="new texture" src="https://cloud.githubusercontent.com/assets/459970/18403044/95223112-76b0-11e6-96ed-076ae9ae6a1e.png">
+ - click "Show texture in texture tab" (far right button)<br><img width="318" alt="show texture" src="https://cloud.githubusercontent.com/assets/459970/18403092/cf169cf0-76b0-11e6-83b2-5ed3354bda42.png">
+ - click "Open"<br><img width="333" alt="open image" src="https://cloud.githubusercontent.com/assets/459970/18403105/ec1ecd86-76b0-11e6-8898-da727db14219.png">
  - select the heightmap file
 
 7. Scale displacement:
  - Click the tools menu (wrench icon)
- - Set "Midlevel" to `0` <img width="333" alt="open image" src="https://cloud.githubusercontent.com/assets/459970/18403105/ec1ecd86-76b0-11e6-8898-da727db14219.png">
+ - Set "Midlevel" to `0`<br><img width="315" alt="strength" src="https://cloud.githubusercontent.com/assets/459970/18403290/d71bc4e2-76b1-11e6-997f-fa76a4ade7bb.png">
  - Set "Strength" to be the x-scale multiplied by the "z:x scale factor"
 
 ### Printing
@@ -50,6 +50,6 @@ When preparing a model for 3D printing I like to fade the edges out, to ensure t
 
 ### Tips
 
-The first time you try this, it's convenient to make your heightmap 1000 pixels wide, which makes the math easier: then your mesh x-scale is just 1, and your displacement scale is the "z:x scale factor" value copied from the Heightmapper.
+The first time you try this, it's convenient to make your heightmap 1000 pixels wide, which makes the math easier: then your mesh x-scale is just 1, and your displacement scale is the "z:x scale factor" value copied from Heightmapper.
 
 Good luck!
