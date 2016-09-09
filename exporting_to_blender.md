@@ -1,22 +1,24 @@
 To use a heightmap from Heightmapper as a displacement map in Blender:
 
-Make sure cursor is over the main viewport before you begin. Start with a new scene.
+Enter the following keys, in order – make sure your cursor is over the main viewport before you begin.
 
-Delete the startup cube:
+1. Start with a new scene.
+
+2. Delete the startup cube:
  - x
  - return
 
-Create a grid:
+3. Create a grid:
  - shift-a
  - m
  - g
 
-Enter # of divisions (click nowhere! just start typing):
+4. Enter # of divisions (click nowhere! just start typing):
  - enter number of x pixels in heightmap minus 2
  - tab
  - enter number of y pixels in heightmap minus 2
 
-Scale to match image:
+5. Scale to match image:
  - s
  - enter the number of x pixels / 1000
  - tab
@@ -25,7 +27,7 @@ Scale to match image:
  - enter 1 (for z-scale)
  - return
 
-Add displacement modifier:
+6. Add displacement modifier:
  - tools menu (wrench)
  - "add modifier"
  - deform > displace
@@ -34,12 +36,12 @@ Add displacement modifier:
  - "open"
  - select file
 
-Scale displacement:
+7. Scale displacement:
  - select displacement modifier
  - edit scale
  - set scale to be x-scale * "z:x scale factor"
 
-### Tops
+### Tips
 
 When preparing a model for 3D printing I like to fade the edges out, to ensure that the edges will be the lowest part of the model. You can do this with the square gradient tool in Photoshop.
 
