@@ -12,15 +12,15 @@ Create a grid:
  - g
 
 Enter # of divisions (click nowhere! just start typing):
- - enter number of x pixels - 2
+ - enter number of x pixels in heightmap minus 2
  - tab
- - enter number of y pixels - 2
+ - enter number of y pixels in heightmap minus 2
 
 Scale to match image:
  - s
- - enter the number of x pixels
+ - enter the number of x pixels / 1000
  - tab
- - enter y pixels
+ - enter y pixels / 1000
  - tab
  - enter 1 (for z-scale)
  - return
@@ -39,4 +39,8 @@ Scale displacement:
  - edit scale
  - set scale to be x-scale * "z:x scale factor"
 
+### Tops
+
 When preparing a model for 3D printing I like to fade the edges out, to ensure that the edges will be the lowest part of the model. You can do this with the square gradient tool in Photoshop.
+
+The first time you try this, it's convenient to make your heightmap 1000 pixels wide, which makes the math easier: then your mesh x-scale is just 1, and your displacement scale is the "z:x scale factor" value copied from the Heightmapper.
