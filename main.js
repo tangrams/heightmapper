@@ -79,10 +79,17 @@ map = (function () {
     function analyse() {
         var curtain = document.getElementById("curtain");
         var curtainimg = curtain.getElementsByTagName('img')[0];
-
+        var dodebug = false;
+        // console.log('debug?', dodebug)
+        if (dodebug) {console.log('debugging!');debugger;}
         // save the current view to the curtain div and cover the canvas with it
         scene.screenshot().then(function(curtainscreenshot) {
+            console.log('1: screenshot 1')
+            // window.open(curtainscreenshot.url, '_blank'); // TODO: it's opening twice on first pageload :(
+            // curtainscreenshot.url = 'cat.png';
             curtainimg.onload = function(){
+        if (dodebug) debugger;
+                console.log('2: curtainimg.onload') 
                 // lower curtain
                 curtain.style.backgroundImage = "url('"+curtainscreenshot.url+"')";
                 curtain.style.display = "block";
@@ -92,8 +99,14 @@ map = (function () {
                 scene.styles.hillshade.shaders.uniforms.u_min = global_min;
                 scene.styles.hillshade.shaders.uniforms.u_max = global_max;
                 scene.screenshot().then(function(screenshot) {
+            // window.open(screenshot.url, '_blank');
+                return false;
+        if (dodebug) debugger;
+                    console.log('3: screenshot 2')
                     var img = new Image();
                     img.onload = function(){
+        if (dodebug) debugger;
+                        console.log('4: img.onload')
                         var tempCanvas = document.createElement("canvas");
                         tempCanvas.width = img.width; 
                         tempCanvas.height = img.height;
@@ -137,6 +150,8 @@ map = (function () {
                         // redraw with new settings
                         scene.requestRedraw();
                         fadeOut(curtain);
+                        // clean up
+                        img.src = ''
                     };
 
                     window.URL.revokeObjectURL(curtainscreenshot.url);
@@ -147,21 +162,24 @@ map = (function () {
             };
 
             curtainimg.src = curtainscreenshot.url;
-            // console.log('url:('+curtainscreenshot.url+')')
 
         });
     }
 
     function fadeOut(element) {
+        // console.log('src:', element.style.backgroundImage)
         var op = 1;  // initial opacity
         var timer = setInterval(function () {
             if (op <= 0.1){
                 clearInterval(timer);
                 element.style.display = "none";
+                window.URL.revokeObjectURL(element.style.backgroundImage);
             }
             element.style.opacity = op;
             op -= op * 0.5;
-        }, 25);
+            // op -= op * 0.25;
+        // }, 25);
+        }, 50);
     }
 
     window.layer = layer;
