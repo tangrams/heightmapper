@@ -77,6 +77,8 @@ map = (function () {
     }
 
     function analyse() {
+        map._container.style.cursor = "progress";
+
         var curtain = document.getElementById("curtain");
         var curtainimg = curtain.getElementsByTagName('img')[0];
 
@@ -158,6 +160,8 @@ map = (function () {
             if (op <= 0.1){
                 clearInterval(timer);
                 element.style.display = "none";
+                map._container.style.cursor = "";
+
             }
             element.style.opacity = op;
             op -= op * 0.5;
