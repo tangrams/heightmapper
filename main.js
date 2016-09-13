@@ -87,8 +87,15 @@ map = (function () {
                 curtain.style.backgroundImage = "url('"+curtainscreenshot.url+"')";
                 curtain.style.display = "block";
                 curtain.style.opacity = 1;
+                var configNeedsUpdate = false;
             
-                // set controls to max
+                // hide lines if necessary
+                if (gui.map_lines) {
+                    toggleLines(gui.map_lines);
+                    configNeedsUpdate = true;
+                }
+
+                // set exposure controls to max
                 scene.styles.hillshade.shaders.uniforms.u_min = global_min;
                 scene.styles.hillshade.shaders.uniforms.u_max = global_max;
                 scene.screenshot().then(function(screenshot) {
@@ -132,10 +139,20 @@ map = (function () {
                         // update dat.gui controllers
                         updateGUI();
 
+                        // reset exposure
                         scene.styles.hillshade.shaders.uniforms.u_min = gui.u_min;
                         scene.styles.hillshade.shaders.uniforms.u_max = gui.u_max;
+
                         // redraw with new settings
-                        scene.requestRedraw();
+                        if (configNeedsUpdate) {
+                            scene.updateConfig();
+                        } else {
+                            scene.requestRedraw();
+                        }
+
+                        // turn lines back on, if they were on
+                        if (gui.map_lines) toggleLines(gui.map_lines);
+
                         fadeOut(curtain);
                     };
 
@@ -147,7 +164,6 @@ map = (function () {
             };
 
             curtainimg.src = curtainscreenshot.url;
-            // console.log('url:('+curtainscreenshot.url+')')
 
         });
     }
@@ -215,6 +231,11 @@ map = (function () {
             scene.styles.hillshade.shaders.uniforms.u_min = uminValue;
             expose();
         });
+        gui.map_lines = false;
+        gui.add(gui, 'map_lines').name("map lines").onChange(function(value) {
+            toggleLines(value);
+            expose();
+        });
         gui.export = function () {
             // button to open screenshot in a new tab – 'save as' to save to disk
             scene.screenshot().then(function(screenshot) { window.open(screenshot.url); });
@@ -247,6 +268,11 @@ map = (function () {
         document.getElementById('help-blocker').style.visibility = visibility;
     }
 
+    // draw boundary and water lines
+    function toggleLines(active) {
+        scene.config.layers.water.visible = active;
+        scene.config.layers.boundaries.visible = active;
+    }
 
     document.onkeypress = function (e) {
         e = e || window.event;
