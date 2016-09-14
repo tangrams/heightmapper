@@ -82,7 +82,7 @@ map = (function () {
         map._container.style.cursor = "progress";
 
         var curtain = document.getElementById("curtain");
-        var curtainimg = document.getElementById("curtain").getElementsByTagName('img')[0];;
+        var curtainimg = document.getElementById("curtainimg");
         // save the current view to the curtain div and cover the canvas with it
         scene.screenshot().then(function(curtainscreenshot) {
             curtainimg.onload = function(){
@@ -161,7 +161,7 @@ map = (function () {
             if (opacity <= 0.1){
                 clearInterval(timer);
                 curtain.style.display = "none";
-                window.URL.revokeObjectURL(document.getElementById("curtain").getElementsByTagName('img')[0].src)
+                window.URL.revokeObjectURL(document.getElementById("curtainimg").src);
                 map._container.style.cursor = "";
                 curtain_down = false;
             }
