@@ -77,23 +77,16 @@ map = (function () {
     }
 
     function analyse() {
+        if (curtain_down) return false;
+        curtain_down = true;
         map._container.style.cursor = "progress";
 
         var curtain = document.getElementById("curtain");
-        var curtainimg = curtain.getElementsByTagName('img')[0];
-        var dodebug = false;
-        // console.log('debug?', dodebug)
-        if (dodebug) {console.log('debugging!');debugger;}
+        var curtainimg = document.getElementById("curtain").getElementsByTagName('img')[0];;
         // save the current view to the curtain div and cover the canvas with it
         scene.screenshot().then(function(curtainscreenshot) {
-            console.log('1: screenshot 1')
-            // window.open(curtainscreenshot.url, '_blank'); // TODO: it's opening twice on first pageload :(
-            // curtainscreenshot.url = 'cat.png';
             curtainimg.onload = function(){
-        if (dodebug) debugger;
-                console.log('2: curtainimg.onload') 
                 // lower curtain
-                curtain.style.backgroundImage = "url('"+curtainscreenshot.url+"')";
                 curtain.style.display = "block";
                 curtain.style.opacity = 1;
             
@@ -101,14 +94,8 @@ map = (function () {
                 scene.styles.hillshade.shaders.uniforms.u_min = global_min;
                 scene.styles.hillshade.shaders.uniforms.u_max = global_max;
                 scene.screenshot().then(function(screenshot) {
-            // window.open(screenshot.url, '_blank');
-                return false;
-        if (dodebug) debugger;
-                    console.log('3: screenshot 2')
                     var img = new Image();
                     img.onload = function(){
-        if (dodebug) debugger;
-                        console.log('4: img.onload')
                         var tempCanvas = document.createElement("canvas");
                         tempCanvas.width = img.width; 
                         tempCanvas.height = img.height;
@@ -156,8 +143,8 @@ map = (function () {
                         img.src = ''
                     };
 
-                    window.URL.revokeObjectURL(curtainscreenshot.url);
                     img.src = screenshot.url;
+                    window.URL.revokeObjectURL(curtainscreenshot.url);
 
                 });
 
@@ -167,22 +154,20 @@ map = (function () {
 
         });
     }
-
+    var curtain_down = false;
     function fadeOut(element) {
-        // console.log('src:', element.style.backgroundImage)
-        var op = 1;  // initial opacity
+        var opacity = 1;  // initial opacity
         var timer = setInterval(function () {
-            if (op <= 0.1){
+            if (opacity <= 0.1){
                 clearInterval(timer);
-                element.style.display = "none";
-                window.URL.revokeObjectURL(element.style.backgroundImage);
+                curtain.style.display = "none";
+                window.URL.revokeObjectURL(document.getElementById("curtain").getElementsByTagName('img')[0].src)
                 map._container.style.cursor = "";
+                curtain_down = false;
             }
-            element.style.opacity = op;
-            op -= op * 0.5;
-            // op -= op * 0.25;
-        // }, 25);
-        }, 50);
+            element.style.opacity = opacity;
+            opacity -= opacity * 0.5;
+        }, 25);
     }
 
     window.layer = layer;
