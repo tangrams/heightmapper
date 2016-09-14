@@ -138,9 +138,8 @@ map = (function () {
                         scene.styles.hillshade.shaders.uniforms.u_max = gui.u_max;
                         // redraw with new settings
                         scene.requestRedraw();
+                        // raise curtain
                         fadeOut(curtain);
-                        // clean up
-                        img.src = ''
                     };
 
                     img.src = screenshot.url;
