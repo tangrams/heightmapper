@@ -77,16 +77,16 @@ map = (function () {
     }
 
     function analyse() {
+        if (curtain_down) return false;
+        curtain_down = true;
         map._container.style.cursor = "progress";
 
         var curtain = document.getElementById("curtain");
-        var curtainimg = curtain.getElementsByTagName('img')[0];
-
+        var curtainimg = document.getElementById("curtainimg");
         // save the current view to the curtain div and cover the canvas with it
         scene.screenshot().then(function(curtainscreenshot) {
             curtainimg.onload = function(){
                 // lower curtain
-                curtain.style.backgroundImage = "url('"+curtainscreenshot.url+"')";
                 curtain.style.display = "block";
                 curtain.style.opacity = 1;
             
@@ -138,33 +138,34 @@ map = (function () {
                         scene.styles.hillshade.shaders.uniforms.u_max = gui.u_max;
                         // redraw with new settings
                         scene.requestRedraw();
+                        // raise curtain
                         fadeOut(curtain);
                     };
 
-                    window.URL.revokeObjectURL(curtainscreenshot.url);
                     img.src = screenshot.url;
+                    window.URL.revokeObjectURL(curtainscreenshot.url);
 
                 });
 
             };
 
             curtainimg.src = curtainscreenshot.url;
-            // console.log('url:('+curtainscreenshot.url+')')
 
         });
     }
-
+    var curtain_down = false;
     function fadeOut(element) {
-        var op = 1;  // initial opacity
+        var opacity = 1;  // initial opacity
         var timer = setInterval(function () {
-            if (op <= 0.1){
+            if (opacity <= 0.1){
                 clearInterval(timer);
-                element.style.display = "none";
+                curtain.style.display = "none";
+                window.URL.revokeObjectURL(document.getElementById("curtainimg").src);
                 map._container.style.cursor = "";
-
+                curtain_down = false;
             }
-            element.style.opacity = op;
-            op -= op * 0.5;
+            element.style.opacity = opacity;
+            opacity -= opacity * 0.5;
         }, 25);
     }
 

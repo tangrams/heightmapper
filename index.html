@@ -23,15 +23,16 @@
 
         #curtain {
             position: absolute;
-            pointer-events:none;
+            pointer-events: none;
             z-index: 800;
-            background-size: contain;
-            cursor: progress;
+            width: 100%;
+            height: 100%;
         }
 
         #curtain img {
+            pointer-events: none;
             width: 100%;
-            visibility: hidden;
+            height: 100%;
         }
 
         #map {
@@ -116,7 +117,7 @@
         </div>
     </div>
     <div id="help-blocker"></div>
-    <div id="curtain"><img src=''></div>
+    <div id="curtain"><img id="curtainimg"></div>
     <div id="map"></div>
 
     <!-- 3rd party libraries -->
