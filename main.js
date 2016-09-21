@@ -10,6 +10,7 @@ map = (function () {
     var uminValue, umaxValue; // storage
     var scene_loaded = false;
     var moving = false;
+    var analysing = false;
 
     /*** URL parsing ***/
 
@@ -30,10 +31,29 @@ map = (function () {
         "inertiaDeceleration" : 10000,
         "zoomSnap" : .001}
     );
-
+    var ready = false;
+var do_analyse = false;
     var layer = Tangram.leafletLayer({
         scene: 'scene.yaml',
-        attribution: 'Map by <a href="https://mapzen.com/tangram" target="_blank">Tangram</a> | <a href="https://github.com/tangram/heightmapper" target="_blank">Fork This</a>'
+        attribution: 'Map by <a href="https://mapzen.com/tangram" target="_blank">Tangram</a> | <a href="https://github.com/tangram/heightmapper" target="_blank">Fork This</a>',
+        // preUpdate: function() {ready = false;},
+        postUpdate: function() {
+            if (do_analyse) {
+            // ready = true;
+            // if (do_analyse && !moving) {
+            //     do_analysis();
+                console.log('postupdate: do_analysis!')
+                do_analyse = false;
+                do_analysis();
+            // }
+            } else if (analysing) {
+                console.log('postupdate: analysing')
+                analyse();
+                // scene.requestRedraw();
+            } else if (done) {
+                // console.log('done')
+            }
+        }
     });
     
     // from https://davidwalsh.name/javascript-debounce-function
@@ -58,16 +78,24 @@ map = (function () {
     }
 
     function expose() {
+        console.log(" > expose()")
         if (typeof gui != 'undefined' && gui.autoexpose == false) return false;
         if (scene_loaded) {
-            analyse();
+            // if (ready) do_analysis();
+            // do_analysis();
+            do_analyse = true;
+                // analyse();
         } else {
             // wait for scene to initialize first
             scene.initializing.then(function() {
-                analyse();
+                // if (ready) do_analysis();
+                // do_analysis();
+                // else do_analyse = true;
+                do_analyse = true;
             });
         }
     }
+    var test;
 
     function updateGUI() {
         // update dat.gui controllers
@@ -76,97 +104,68 @@ map = (function () {
         }
     }
 
-    function analyse() {
-        if (curtain_down) return false;
-        curtain_down = true;
-        map._container.style.cursor = "progress";
+    var tempCanvas = document.createElement("canvas");
 
-        var curtain = document.getElementById("curtain");
-        var curtainimg = document.getElementById("curtainimg");
-        // save the current view to the curtain div and cover the canvas with it
-        scene.screenshot().then(function(curtainscreenshot) {
-            curtainimg.onload = function(){
-                // lower curtain
-                curtain.style.display = "block";
-                curtain.style.opacity = 1;
-            
-                // set controls to max
-                scene.styles.hillshade.shaders.uniforms.u_min = global_min;
-                scene.styles.hillshade.shaders.uniforms.u_max = global_max;
-                scene.screenshot().then(function(screenshot) {
-                    var img = new Image();
-                    img.onload = function(){
-                        var tempCanvas = document.createElement("canvas");
-                        tempCanvas.width = img.width; 
-                        tempCanvas.height = img.height;
-                        var ctx = tempCanvas.getContext("2d"); // Get canvas 2d context
-                        ctx.drawImage(img,0,0);
-                        var min = 255;
-                        var max = 0;
-                        var pixel;
-                        var pixels = ctx.getImageData(0,0, img.width, img.height); // get all the pixels
-                        var zeros = [];
-                        // only check every nth pixel (vary with browser size)
-                        var stride = Math.round(img.height * img.width / 1000000);
-                        // 4 = only sample the red value in [R, G, B, A]
-                        for (var i = 0; i < img.height * img.width * 4; i += 4 * stride) {
-                            pixel = pixels.data[i];
-                            if (pixel == 0) zeros.push(i);
-                            min = Math.min(min, pixel);
-                            max = Math.max(max, pixel);
-                        }
-                        // prevent min and max from being the same value
-                        max = (max == min) ? (max + 1) : max;
-                        // set u_min to min = 0
-                        var range = (global_max - global_min);
-                        gui.u_min = (min / 255) * range + global_min;
-                        gui.u_max = (max / 255) * range + global_min;
-
-                        // get the width of the current view in meters
-                        // compare to the current elevation range in meters
-                        // the ratio is the "height" of the current scene compared to its width –
-                        // multiply it by the width of your 3D mesh to get the height
-
-                        var zrange = (gui.u_max - gui.u_min);
-                        var xscale = zrange / scene.view.size.meters.x;
-                        gui.scaleFactor = xscale +''; // convert to string to make the display read-only
-
-                        // update dat.gui controllers
-                        updateGUI();
-
-                        scene.styles.hillshade.shaders.uniforms.u_min = gui.u_min;
-                        scene.styles.hillshade.shaders.uniforms.u_max = gui.u_max;
-                        // redraw with new settings
-                        scene.requestRedraw();
-                        // raise curtain
-                        fadeOut(curtain);
-                    };
-
-                    img.src = screenshot.url;
-                    window.URL.revokeObjectURL(curtainscreenshot.url);
-
-                });
-
-            };
-
-            curtainimg.src = curtainscreenshot.url;
-
-        });
+    function do_analysis() {
+        console.log('  do_analysis')
+        analysing = true;
+        // set controls to max
+        scene.styles.hillshade.shaders.uniforms.u_min = global_min;
+        scene.styles.hillshade.shaders.uniforms.u_max = global_max;
+        scene.requestRedraw();
     }
-    var curtain_down = false;
-    function fadeOut(element) {
-        var opacity = 1;  // initial opacity
-        var timer = setInterval(function () {
-            if (opacity <= 0.1){
-                clearInterval(timer);
-                curtain.style.display = "none";
-                window.URL.revokeObjectURL(document.getElementById("curtainimg").src);
-                map._container.style.cursor = "";
-                curtain_down = false;
-            }
-            element.style.opacity = opacity;
-            opacity -= opacity * 0.5;
-        }, 25);
+
+    function analyse() {
+        console.log(" > analyse()")
+
+        var c = scene.canvas;
+        tempCanvas.width = c.width/4; 
+        tempCanvas.height = c.height/4;
+        var ctx = tempCanvas.getContext("2d"); // Get canvas 2d context
+        ctx.drawImage(scene.canvas,0,0,c.width/4,c.height/4);
+        var min = 255;
+        var max = 0;
+        var pixel;
+        var pixels = ctx.getImageData(0,0, tempCanvas.width, tempCanvas.height); // get all the pixels
+        var zeros = [];
+        // only check every nth pixel (vary with browser size)
+        // var stride = Math.round(img.height * img.width / 1000000);
+        // 4 = only sample the red value in [R, G, B, A]
+        for (var i = 0; i < tempCanvas.height * tempCanvas.width * 4; i += 4) {
+            pixel = pixels.data[i];
+            var alpha = pixels.data[i+3];
+            if (alpha === 0) test = "got one"
+            if (pixel === 0) zeros.push(i);
+            min = Math.min(min, pixel);
+            max = Math.max(max, pixel);
+        }
+        console.log('test:', test)
+        // prevent min and max from being the same value
+        max = (max == min) ? (max + 1) : max;
+        // set u_min to min = 0
+        var range = (global_max - global_min);
+        gui.u_min = (min / 255) * range + global_min;
+        gui.u_max = (max / 255) * range + global_min;
+
+        // get the width of the current view in meters
+        // compare to the current elevation range in meters
+        // the ratio is the "height" of the current scene compared to its width –
+        // multiply it by the width of your 3D mesh to get the height
+
+        var zrange = (gui.u_max - gui.u_min);
+        var xscale = zrange / scene.view.size.meters.x;
+        gui.scaleFactor = xscale +''; // convert to string to make the display read-only
+
+        // update dat.gui controllers
+        updateGUI();
+
+        scene.styles.hillshade.shaders.uniforms.u_min = gui.u_min;
+        scene.styles.hillshade.shaders.uniforms.u_max = gui.u_max;
+        // redraw with new settings
+        analysing = false;
+        done = true;
+        scene.requestRedraw();
+
     }
 
     window.layer = layer;
@@ -265,7 +264,7 @@ map = (function () {
     };
 
     /***** Render loop *****/
-
+var done = false;
     window.addEventListener('load', function () {
         // Scene initialized
         layer.on('init', function() {
@@ -276,8 +275,26 @@ map = (function () {
                 // will be triggered when tiles are finished loading
                 // and also manually by the moveend event
                 view_complete: function() {
+                    console.log("view_complete")
+                    // expose();
+                    // console.log('ready:', ready, "moving:", moving, "analysing:", analysing)
                     // perform analysis
-                    if (!moving) expose();
+                    if (!moving && !done && !analysing) { 
+                        console.log('1 EXPOSE!')
+                        expose();
+                    }
+                    else if (analysing) {
+                        console.log('2 ANALYSE!')
+                        analyse();
+                    }
+                    else if (!moving && do_analysis) {
+                        console.log('3 EXPOSE?')
+                        expose();
+                    }
+                    else if (done) {
+                        console.log('4 DONE!')
+                        // done = false;
+                    }
                 }
             });
             scene_loaded = true;
@@ -286,9 +303,6 @@ map = (function () {
 
         });
         layer.addTo(map);
-
-        // tuck curtain between leaflet controls and map
-        map._container.insertBefore(curtain, map._container.firstChild);
 
         // bind help div onclicks
         document.getElementById('help').onclick = function(){toggleHelp(false)};
