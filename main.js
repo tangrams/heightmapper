@@ -33,25 +33,27 @@ map = (function () {
     );
     var ready = false;
 var do_analyse = false;
+var lastmax, lastmin;
     var layer = Tangram.leafletLayer({
         scene: 'scene.yaml',
         attribution: 'Map by <a href="https://mapzen.com/tangram" target="_blank">Tangram</a> | <a href="https://github.com/tangram/heightmapper" target="_blank">Fork This</a>',
         // preUpdate: function() {ready = false;},
         postUpdate: function() {
-            if (do_analyse) {
-            // ready = true;
-            // if (do_analyse && !moving) {
-            //     do_analysis();
-                console.log('postupdate: do_analysis!')
-                do_analyse = false;
-                do_analysis();
-            // }
-            } else if (analysing) {
-                console.log('postupdate: analysing')
-                analyse();
-                // scene.requestRedraw();
-            } else if (done) {
-                // console.log('done')
+            // console.log('moving:', moving, "done:", done, "analysing:", analysing)
+
+            if (!moving && !analysing) { 
+                console.log('1 EXPOSE!')
+                analysing = true;
+                expose();
+            }
+            else if (!moving && analysing) {
+                console.log('2 ANALYSE!')
+                // debugger
+                start_analysis();
+            }
+            else if (done) {
+                console.log('4 DONE!')
+                done = false;
             }
         }
     });
@@ -78,25 +80,20 @@ var do_analyse = false;
     }
 
     function expose() {
-        console.log(" > expose()")
+        // console.log(" > expose()")
         if (typeof gui != 'undefined' && gui.autoexpose == false) return false;
         if (scene_loaded) {
-            // if (ready) do_analysis();
-            // do_analysis();
-            do_analyse = true;
-                // analyse();
+            start_analysis();
         } else {
             // wait for scene to initialize first
             scene.initializing.then(function() {
-                // if (ready) do_analysis();
-                // do_analysis();
-                // else do_analyse = true;
-                do_analyse = true;
+                start_analysis();
             });
         }
     }
     var test;
-
+    // var last_max;
+    // var last_min;
     function updateGUI() {
         // update dat.gui controllers
         for (var i in gui.__controllers) {
@@ -106,17 +103,19 @@ var do_analyse = false;
 
     var tempCanvas = document.createElement("canvas");
 
-    function do_analysis() {
-        console.log('  do_analysis')
-        analysing = true;
-        // set controls to max
-        scene.styles.hillshade.shaders.uniforms.u_min = global_min;
-        scene.styles.hillshade.shaders.uniforms.u_max = global_max;
+    function start_analysis() {
+        // console.log('  start_analysis')
+        // set levels
+        var levels = analyse();
+        console.log('levels:', levels)
+        scene.styles.hillshade.shaders.uniforms.u_min = levels.min;
+        scene.styles.hillshade.shaders.uniforms.u_max = levels.max;
         scene.requestRedraw();
+
     }
 
     function analyse() {
-        console.log(" > analyse()")
+        // console.log(" > analyse()")
 
         var c = scene.canvas;
         tempCanvas.width = c.width/4; 
@@ -133,19 +132,43 @@ var do_analyse = false;
         // 4 = only sample the red value in [R, G, B, A]
         for (var i = 0; i < tempCanvas.height * tempCanvas.width * 4; i += 4) {
             pixel = pixels.data[i];
-            var alpha = pixels.data[i+3];
-            if (alpha === 0) test = "got one"
+            // var alpha = pixels.data[i+3];
+            // if (alpha === 0) test = " >>> got one <<<"
             if (pixel === 0) zeros.push(i);
             min = Math.min(min, pixel);
             max = Math.max(max, pixel);
         }
-        console.log('test:', test)
+        // console.log('test:', test)
         // prevent min and max from being the same value
-        max = (max == min) ? (max + 1) : max;
+        min = (max == min) ? (max - 10) : min;
+        if (max === lastmax && min === lastmin) {
+            analysing = false;
+            done = true;
+        }
+        lastmax = max;
+        lastmin = min;
+
+        if (max > 250 && min < 5) {
+            max = 275;
+            min = -20;
+        }
+
+        // console.log('guiMAX:', gui.u_max, 'guiMIN:', gui.u_min)
+        // console.log('uMAX:', scene.styles.hillshade.shaders.uniforms.u_max, 'uMIN:', scene.styles.hillshade.shaders.uniforms.u_min)
+        console.log('MAX:', max, 'MIN:', min)
+        // if (max > 250) max = 260;
+        // if (min < 10) min = -10;
         // set u_min to min = 0
+        // var range = (global_max - global_min);
         var range = (global_max - global_min);
-        gui.u_min = (min / 255) * range + global_min;
-        gui.u_max = (max / 255) * range + global_min;
+        // gui.u_min = (min / 255) * range + global_min;
+        // gui.u_max = (max / 255) * range + global_min;
+        var minadj = (min / 255) * range + global_min;
+        var maxadj = (max / 255) * range + global_min;
+
+
+        // console.log('MAXadj:', maxadj, 'MINadj:', minadj)
+
 
         // get the width of the current view in meters
         // compare to the current elevation range in meters
@@ -156,15 +179,20 @@ var do_analyse = false;
         var xscale = zrange / scene.view.size.meters.x;
         gui.scaleFactor = xscale +''; // convert to string to make the display read-only
 
-        // update dat.gui controllers
-        updateGUI();
+        scene.styles.hillshade.shaders.uniforms.u_min = minadj;
+        scene.styles.hillshade.shaders.uniforms.u_max = maxadj;
 
-        scene.styles.hillshade.shaders.uniforms.u_min = gui.u_min;
-        scene.styles.hillshade.shaders.uniforms.u_max = gui.u_max;
+        // update dat.gui controllers
+        gui.u_min = minadj;
+        gui.u_max = maxadj;
+        updateGUI();
+        return {max: maxadj, min: minadj}
+
+
         // redraw with new settings
-        analysing = false;
-        done = true;
-        scene.requestRedraw();
+        // analysing = false;
+        // done = true;
+        // scene.requestRedraw();
 
     }
 
@@ -275,26 +303,26 @@ var done = false;
                 // will be triggered when tiles are finished loading
                 // and also manually by the moveend event
                 view_complete: function() {
-                    console.log("view_complete")
+                    // console.log("view_complete")
                     // expose();
                     // console.log('ready:', ready, "moving:", moving, "analysing:", analysing)
                     // perform analysis
-                    if (!moving && !done && !analysing) { 
-                        console.log('1 EXPOSE!')
-                        expose();
-                    }
-                    else if (analysing) {
-                        console.log('2 ANALYSE!')
-                        analyse();
-                    }
-                    else if (!moving && do_analysis) {
-                        console.log('3 EXPOSE?')
-                        expose();
-                    }
-                    else if (done) {
-                        console.log('4 DONE!')
-                        // done = false;
-                    }
+                    // if (!moving && !done && !analysing) { 
+                    //     console.log('1 EXPOSE!')
+                    //     expose();
+                    // }
+                    // else if (analysing) {
+                    //     console.log('2 ANALYSE!')
+                    //     analyse();
+                    // }
+                    // else if (!moving && start_analysis) {
+                    //     console.log('3 EXPOSE?')
+                    //     expose();
+                    // }
+                    // else if (done) {
+                    //     console.log('4 DONE!')
+                    //     // done = false;
+                    // }
                 }
             });
             scene_loaded = true;
