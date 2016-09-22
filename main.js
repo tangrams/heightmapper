@@ -34,26 +34,28 @@ map = (function () {
     var ready = false;
 var do_analyse = false;
 var lastmax, lastmin;
+var secondtime = false;
+var lastspread = 0;
     var layer = Tangram.leafletLayer({
         scene: 'scene.yaml',
         attribution: 'Map by <a href="https://mapzen.com/tangram" target="_blank">Tangram</a> | <a href="https://github.com/tangram/heightmapper" target="_blank">Fork This</a>',
-        // preUpdate: function() {ready = false;},
         postUpdate: function() {
-            // console.log('moving:', moving, "done:", done, "analysing:", analysing)
-
-            if (!moving && !analysing) { 
-                console.log('1 EXPOSE!')
-                analysing = true;
-                expose();
-            }
-            else if (!moving && analysing) {
-                console.log('2 ANALYSE!')
-                // debugger
-                start_analysis();
-            }
-            else if (done) {
-                console.log('4 DONE!')
-                done = false;
+            if (gui.autoexpose) {
+                if (!analysing && !done) { 
+                    console.log('\nEXPOSE!')
+                    // analysing = true;
+                    expose();
+                }
+                else if (analysing && !done) {
+                    console.log('ANALYSE!')
+                    start_analysis();
+                }
+                else if (done) {
+                    console.log('DONE!')
+                    lastmax = 0;
+                    lastmin = 255;
+                    done = false;
+                }
             }
         }
     });
@@ -81,6 +83,7 @@ var lastmax, lastmin;
 
     function expose() {
         // console.log(" > expose()")
+        analysing = true;
         if (typeof gui != 'undefined' && gui.autoexpose == false) return false;
         if (scene_loaded) {
             start_analysis();
@@ -91,9 +94,7 @@ var lastmax, lastmin;
             });
         }
     }
-    var test;
-    // var last_max;
-    // var last_min;
+
     function updateGUI() {
         // update dat.gui controllers
         for (var i in gui.__controllers) {
@@ -101,10 +102,7 @@ var lastmax, lastmin;
         }
     }
 
-    var tempCanvas = document.createElement("canvas");
-
     function start_analysis() {
-        // console.log('  start_analysis')
         // set levels
         var levels = analyse();
         console.log('levels:', levels)
@@ -115,60 +113,76 @@ var lastmax, lastmin;
     }
 
     function analyse() {
-        // console.log(" > analyse()")
+        // console.log("analyse():")
 
-        var c = scene.canvas;
-        tempCanvas.width = c.width/4; 
-        tempCanvas.height = c.height/4;
         var ctx = tempCanvas.getContext("2d"); // Get canvas 2d context
-        ctx.drawImage(scene.canvas,0,0,c.width/4,c.height/4);
-        var min = 255;
-        var max = 0;
-        var pixel;
-        var pixels = ctx.getImageData(0,0, tempCanvas.width, tempCanvas.height); // get all the pixels
-        var zeros = [];
+        // redraw canvas smaller in testing canvas, for speed
+        ctx.drawImage(scene.canvas,0,0,scene.canvas.width/4,scene.canvas.height/4);
+        // get all the pixels
+        var pixels = ctx.getImageData(0,0, tempCanvas.width, tempCanvas.height);
+
+        var val;
+        var counts = {};
+        var empty = true;
+        var max = 0, min = 255;
         // only check every nth pixel (vary with browser size)
         // var stride = Math.round(img.height * img.width / 1000000);
         // 4 = only sample the red value in [R, G, B, A]
         for (var i = 0; i < tempCanvas.height * tempCanvas.width * 4; i += 4) {
-            pixel = pixels.data[i];
-            // var alpha = pixels.data[i+3];
-            // if (alpha === 0) test = " >>> got one <<<"
-            if (pixel === 0) zeros.push(i);
-            min = Math.min(min, pixel);
-            max = Math.max(max, pixel);
+            val = pixels.data[i];
+            var alpha = pixels.data[i+3];
+            if (alpha === 0) { // empty pixel, skip to the next one
+                continue;
+            }
+            // if we got this far, we found at least one non-empty pixel!
+            empty = false;
+            // update counts, to get a histogram
+            counts[val] = counts[val] ? counts[val]+1 : 1;
+
+            // update min and max so far
+            min = Math.min(min, val);
+            max = Math.max(max, val);
         }
-        // console.log('test:', test)
-        // prevent min and max from being the same value
-        min = (max == min) ? (max - 10) : min;
-        if (max === lastmax && min === lastmin) {
+
+        if (empty) {
+            // no pixels found, skip the analysis
+            return false;
+        }
+
+
+        var spread = lastspread + 10;
+        lastspread = spread;
+        console.log('>', spread)
+        console.log(min+', '+max+'  last: '+lastmin+', '+lastmax)
+
+        if (max == 255 && min == 0 && lastmin < spread ) {
+            // looks good
+            console.log('DONE')
             analysing = false;
             done = true;
+            lastspread = 0;
+            return false;
         }
+        if (max == 255 && min == 0) {
+            console.log('WIDER')
+            max += spread;
+            min -= spread;
+        }
+        else if (lastmin != 255) {
+            console.log('NARROWER')
+            // done = true;
+        }
+
         lastmax = max;
         lastmin = min;
 
-        if (max > 250 && min < 5) {
-            max = 275;
-            min = -20;
-        }
+        // 
+        var range = (gui.u_max - gui.u_min);
+        var minadj = (min / 255) * range + gui.u_min;
+        var maxadj = (max / 255) * range + gui.u_min;
 
-        // console.log('guiMAX:', gui.u_max, 'guiMIN:', gui.u_min)
-        // console.log('uMAX:', scene.styles.hillshade.shaders.uniforms.u_max, 'uMIN:', scene.styles.hillshade.shaders.uniforms.u_min)
-        console.log('MAX:', max, 'MIN:', min)
-        // if (max > 250) max = 260;
-        // if (min < 10) min = -10;
-        // set u_min to min = 0
-        // var range = (global_max - global_min);
-        var range = (global_max - global_min);
-        // gui.u_min = (min / 255) * range + global_min;
-        // gui.u_max = (max / 255) * range + global_min;
-        var minadj = (min / 255) * range + global_min;
-        var maxadj = (max / 255) * range + global_min;
-
-
-        // console.log('MAXadj:', maxadj, 'MINadj:', minadj)
-
+        // only let the minimum value go below 0 if ocean data is included
+        minadj = gui.include_oceans ? minadj : Math.max(minadj, 0);
 
         // get the width of the current view in meters
         // compare to the current elevation range in meters
@@ -186,14 +200,8 @@ var lastmax, lastmin;
         gui.u_min = minadj;
         gui.u_max = maxadj;
         updateGUI();
+
         return {max: maxadj, min: minadj}
-
-
-        // redraw with new settings
-        // analysing = false;
-        // done = true;
-        // scene.requestRedraw();
-
     }
 
     window.layer = layer;
@@ -215,7 +223,8 @@ var lastmax, lastmin;
             scene.styles.hillshade.shaders.uniforms.u_max = value;
             scene.requestRedraw();
         });
-        gui.u_min = -10916.;
+        // gui.u_min = -10916.;
+        gui.u_min = 0.;
         gui.add(gui, 'u_min', -10916., 8848).name("min elevation").onChange(function(value) {
             scene.styles.hillshade.shaders.uniforms.u_min = value;
             scene.requestRedraw();
@@ -293,6 +302,7 @@ var lastmax, lastmin;
 
     /***** Render loop *****/
 var done = false;
+var tempCanvas;
     window.addEventListener('load', function () {
         // Scene initialized
         layer.on('init', function() {
@@ -303,32 +313,16 @@ var done = false;
                 // will be triggered when tiles are finished loading
                 // and also manually by the moveend event
                 view_complete: function() {
-                    // console.log("view_complete")
-                    // expose();
-                    // console.log('ready:', ready, "moving:", moving, "analysing:", analysing)
-                    // perform analysis
-                    // if (!moving && !done && !analysing) { 
-                    //     console.log('1 EXPOSE!')
-                    //     expose();
-                    // }
-                    // else if (analysing) {
-                    //     console.log('2 ANALYSE!')
-                    //     analyse();
-                    // }
-                    // else if (!moving && start_analysis) {
-                    //     console.log('3 EXPOSE?')
-                    //     expose();
-                    // }
-                    // else if (done) {
-                    //     console.log('4 DONE!')
-                    //     // done = false;
-                    // }
                 }
             });
             scene_loaded = true;
 
             sliderState(false);
 
+            tempCanvas = document.createElement("canvas");
+            tempCanvas.width = scene.canvas.width/4; 
+            tempCanvas.height = scene.canvas.height/4;
+    
         });
         layer.addTo(map);
 
@@ -344,7 +338,10 @@ var done = false;
             scene.requestRedraw();
         }, 250);
 
-        map.on("movestart", function (e) { moving = true; });
+        map.on("movestart", function (e) { moving = true;
+                            // done = false;
+                            // console.log('done:', done)
+         });
         map.on("moveend", function (e) { moveend(e) });
 
     });
