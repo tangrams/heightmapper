@@ -305,6 +305,7 @@ window.go = go;
     function toggleHelp(active) {
         var visibility = active ? "visible" : "hidden";
         document.getElementById('help').style.visibility = visibility;
+        // help-blocker prevents map interaction while help is visible
         document.getElementById('help-blocker').style.visibility = visibility;
     }
 

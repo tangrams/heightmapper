@@ -44,14 +44,17 @@
         }
 
         #help-wrapper {
+            visibility: hidden;
             position: absolute;
             width: 100%;
-            visibility: hidden;
             z-index: 3001;
             background-color: grey;
+            top: 10%;
+            height: 90%;
         }
 
         #help-blocker {
+            visibility: hidden;
             position: absolute;
             left: 0;
             top: 0;
@@ -61,22 +64,21 @@
             background-color: #666;
             opacity: .5;
             content: ' ';
-            visibility: hidden;
         }
 
         #help {
-            visibility: visible;
+            visibility: hidden;
             position: relative;
-            top: 50px;
             max-width: 600px;
             margin: 0 auto;
             background-color: #666;
             color: white;
-            border: 2px solid white;
             padding: 5%;
-            font-family: sans-serif;
-            font-size: 14pt;
-            visibility: hidden;
+            font-family: verdana, sans-serif;
+            font-size: 12pt;
+            max-height: 60%;
+            overflow: scroll;
+            border: 2px solid white;
         }
 
         #help a{
@@ -86,6 +88,17 @@
         .mz-bug-container {
             display: none;
         }
+
+        ::-webkit-scrollbar {
+            -webkit-appearance: none;
+            width: 7px;
+        }
+        ::-webkit-scrollbar-thumb {
+            border-radius: 4px;
+            background-color: rgba(0,0,0,.5);
+            -webkit-box-shadow: 0 0 1px rgba(255,255,255,.5);
+        }
+
     </style>
   </head>
 
@@ -98,23 +111,23 @@
             </p>
 
             <p>
-            This is an elevation data browser, which "auto-exposes" the display so that the highest and lowest visible elevations will be white and black. The result is grayscale heightmap, suitable for use as a displacement map in 3D applications.</p>
+            This is an elevation data browser, which "auto-exposes" the display so that the highest and lowest visible elevations are white and black. The result is a grayscale heightmap, suitable for use as a displacement map in 3D applications.</p>
 
-            <p>I wrote a <a href="https://mapzen.com/blog/tangram-heightmapper/">blog post about this tool, with more explanations and examples!</p>
+            <p>I wrote a <a href="https://mapzen.com/blog/tangram-heightmapper/" target="_blank">blog post about this tool</a>, with more explanations and examples!</p>
 
             <p>Usage:
             <ul>
             <li>Uncheck "auto-expose" to set min and max height levels manually.</li>
             <li>Click "export" to open the current view as an image in a new tab - then "Save As" to save the image to disk. (You may need to right-click the image to do this.)</li>
-            <li>Import the resulting image as a displacement map in a 3D application to generate a 3D model of the terrain. (Here's a tutorial for doing this in Blender.)</li>
+            <li>Import the resulting image as a displacement map in a 3D application to generate a 3D model of the terrain. (<a href="https://github.com/tangrams/heightmapper/blob/gh-pages/exporting_to_blender.md" target="_blank">Here's a tutorial for doing this in Blender</a>.)</li>
             <li>The "z:x scale factor" describes how "high" the current view is, on the z-axis, in terms of how wide the current view is on the x-axis. Multiplying this scale factor by the width of a 3D mesh in units x will tell you how high in units z your mesh should be after displacement in order to be true-scale.</li>
             <li>Press the 'h' key to toggle interface visibility.</li>
             </ul>
             </p>
 
-            <p>Terrain data is coming from <a href="http://mapzen.com">Mapzen</a>'s <a href="https://mapzen.com/blog/elevation/">global terrain tiles</a>.</p>
+            <p>Terrain data is coming from <a href="http://mapzen.com" target="_blank">Mapzen</a>'s <a href="https://mapzen.com/blog/elevation/" target="_blank">global terrain tiles</a>.</p>
 
-            <p>Check out the code or fork this project on <a href="https://github.com/tangrams/heightmapper">Github</a>!</p>
+            <p>Check out the code or fork this project on <a href="https://github.com/tangrams/heightmapper" target="_blank">Github</a>!</p>
 
 
 
