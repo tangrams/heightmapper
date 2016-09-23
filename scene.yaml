@@ -11,7 +11,8 @@ styles:
             uniforms:
                 # set min and max to the levels used by the tiles team
                 u_max: 8900. # everest = 8848
-                u_min: -11000. # challenger deep = -10916
+                u_min: 0. # challenger deep = -10916
+                # u_min: -11000. # challenger deep = -10916
             blocks:
                 global: |
                     float unpack(vec4 h) {

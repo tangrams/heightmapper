@@ -10,6 +10,7 @@ map = (function () {
     var uminValue, umaxValue; // storage
     var scene_loaded = false;
     var moving = false;
+    var analysing = false;
 
     /*** URL parsing ***/
 
@@ -30,10 +31,32 @@ map = (function () {
         "inertiaDeceleration" : 10000,
         "zoomSnap" : .001}
     );
+    var spread = 1;
+    var lastumax = null;
+    var diff = null;
+    var stopped = false; // emergency brake
+    var widening = false;
 
     var layer = Tangram.leafletLayer({
         scene: 'scene.yaml',
-        attribution: 'Map by <a href="https://mapzen.com/tangram" target="_blank">Tangram</a> | <a href="https://github.com/tangram/heightmapper" target="_blank">Fork This</a>'
+        attribution: 'Map by <a href="https://mapzen.com/tangram" target="_blank">Tangram</a> | <a href="https://github.com/tangram/heightmapper" target="_blank">Fork This</a>',
+        postUpdate: function() {
+            if (gui.autoexpose && !stopped) {
+                // three stages:
+                // 1) start analysis
+                if (!analysing && !done) { 
+                    expose();
+                }
+                // 2) continue analysis
+                else if (analysing && !done) {
+                    start_analysis();
+                }
+                // 3) stop analysis and reset
+                else if (done) {
+                    done = false;
+                }
+            }
+        }
     });
     
     // from https://davidwalsh.name/javascript-debounce-function
@@ -58,13 +81,14 @@ map = (function () {
     }
 
     function expose() {
+        analysing = true;
         if (typeof gui != 'undefined' && gui.autoexpose == false) return false;
         if (scene_loaded) {
-            analyse();
+            start_analysis();
         } else {
             // wait for scene to initialize first
             scene.initializing.then(function() {
-                analyse();
+                start_analysis();
             });
         }
     }
@@ -76,97 +100,103 @@ map = (function () {
         }
     }
 
-    function analyse() {
-        if (curtain_down) return false;
-        curtain_down = true;
-        map._container.style.cursor = "progress";
-
-        var curtain = document.getElementById("curtain");
-        var curtainimg = document.getElementById("curtainimg");
-        // save the current view to the curtain div and cover the canvas with it
-        scene.screenshot().then(function(curtainscreenshot) {
-            curtainimg.onload = function(){
-                // lower curtain
-                curtain.style.display = "block";
-                curtain.style.opacity = 1;
-            
-                // set controls to max
-                scene.styles.hillshade.shaders.uniforms.u_min = global_min;
-                scene.styles.hillshade.shaders.uniforms.u_max = global_max;
-                scene.screenshot().then(function(screenshot) {
-                    var img = new Image();
-                    img.onload = function(){
-                        var tempCanvas = document.createElement("canvas");
-                        tempCanvas.width = img.width; 
-                        tempCanvas.height = img.height;
-                        var ctx = tempCanvas.getContext("2d"); // Get canvas 2d context
-                        ctx.drawImage(img,0,0);
-                        var min = 255;
-                        var max = 0;
-                        var pixel;
-                        var pixels = ctx.getImageData(0,0, img.width, img.height); // get all the pixels
-                        var zeros = [];
-                        // only check every nth pixel (vary with browser size)
-                        var stride = Math.round(img.height * img.width / 1000000);
-                        // 4 = only sample the red value in [R, G, B, A]
-                        for (var i = 0; i < img.height * img.width * 4; i += 4 * stride) {
-                            pixel = pixels.data[i];
-                            if (pixel == 0) zeros.push(i);
-                            min = Math.min(min, pixel);
-                            max = Math.max(max, pixel);
-                        }
-                        // prevent min and max from being the same value
-                        max = (max == min) ? (max + 1) : max;
-                        // set u_min to min = 0
-                        var range = (global_max - global_min);
-                        gui.u_min = (min / 255) * range + global_min;
-                        gui.u_max = (max / 255) * range + global_min;
-
-                        // get the width of the current view in meters
-                        // compare to the current elevation range in meters
-                        // the ratio is the "height" of the current scene compared to its width –
-                        // multiply it by the width of your 3D mesh to get the height
-
-                        var zrange = (gui.u_max - gui.u_min);
-                        var xscale = zrange / scene.view.size.meters.x;
-                        gui.scaleFactor = xscale +''; // convert to string to make the display read-only
-
-                        // update dat.gui controllers
-                        updateGUI();
-
-                        scene.styles.hillshade.shaders.uniforms.u_min = gui.u_min;
-                        scene.styles.hillshade.shaders.uniforms.u_max = gui.u_max;
-                        // redraw with new settings
-                        scene.requestRedraw();
-                        // raise curtain
-                        fadeOut(curtain);
-                    };
-
-                    img.src = screenshot.url;
-                    window.URL.revokeObjectURL(curtainscreenshot.url);
-
-                });
-
-            };
-
-            curtainimg.src = curtainscreenshot.url;
-
-        });
+    function start_analysis() {
+        // set levels
+        var levels = analyse();
+        diff = levels.max - lastumax;
+        if (typeof levels.max !== 'undefined') lastumax = levels.max;
+        else diff = 1;
+        // was the last change a widening or narrowing?
+        widening = diff < 0 ? false : true;
+        scene.styles.hillshade.shaders.uniforms.u_min = levels.min;
+        scene.styles.hillshade.shaders.uniforms.u_max = levels.max;
+        scene.requestRedraw();
     }
-    var curtain_down = false;
-    function fadeOut(element) {
-        var opacity = 1;  // initial opacity
-        var timer = setInterval(function () {
-            if (opacity <= 0.1){
-                clearInterval(timer);
-                curtain.style.display = "none";
-                window.URL.revokeObjectURL(document.getElementById("curtainimg").src);
-                map._container.style.cursor = "";
-                curtain_down = false;
+
+    function analyse() {
+        var ctx = tempCanvas.getContext("2d"); // Get canvas 2d context
+        ctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+        // redraw canvas smaller in testing canvas, for speed
+        ctx.drawImage(scene.canvas,0,0,scene.canvas.width/4,scene.canvas.height/4);
+        // get all the pixels
+        var pixels = ctx.getImageData(0,0, tempCanvas.width, tempCanvas.height);
+
+        var val;
+        var counts = {};
+        var empty = true;
+        var max = 0, min = 255;
+        // only check every nth pixel (vary with browser size)
+        // var stride = Math.round(img.height * img.width / 1000000);
+        // 4 = only sample the red value in [R, G, B, A]
+        for (var i = 0; i < tempCanvas.height * tempCanvas.width * 4; i += 4) {
+            val = pixels.data[i];
+            var alpha = pixels.data[i+3];
+            if (alpha === 0) { // empty pixel, skip to the next one
+                continue;
             }
-            element.style.opacity = opacity;
-            opacity -= opacity * 0.5;
-        }, 25);
+            // if we got this far, we found at least one non-empty pixel!
+            empty = false;
+            // update counts, to get a histogram
+            counts[val] = counts[val] ? counts[val]+1 : 1;
+
+            // update min and max so far
+            min = Math.min(min, val);
+            max = Math.max(max, val);
+        }
+
+        if (empty) {
+            // no pixels found, skip the analysis
+            return false;
+        }
+        if (max > 253 && min < 4 && !widening ) {
+            // looks good, done
+            analysing = false;
+            done = true;
+            spread = 2;
+            return false;
+        }
+        if (max > 252 && min < 4 && widening) {
+            // over-exposed, widen the range
+            spread *= 2;
+            // cap spread
+            spread = Math.min(spread, 512)
+            // console.log("WIDEN >", spread, "   diff:", diff)
+            max += spread;
+            min -= spread;
+        }
+
+        // calculate adjusted elevation settings based on current pixel
+        // values and elevation settings
+        var range = (gui.u_max - gui.u_min);
+        var minadj = (min / 255) * range + gui.u_min;
+        var maxadj = (max / 255) * range + gui.u_min;
+
+        // keep levels in range
+        minadj = Math.max(minadj, -11000);
+        maxadj = Math.min(maxadj, 8900);
+        // only let the minimum value go below 0 if ocean data is included
+        minadj = gui.include_oceans ? minadj : Math.max(minadj, 0);
+
+        // keep min and max separated
+        if (minadj === maxadj) maxadj += 10;
+
+        // get the width of the current view in meters
+        // compare to the current elevation range in meters
+        // the ratio is the "height" of the current scene compared to its width –
+        // multiply it by the width of your 3D mesh to get the height
+        var zrange = (gui.u_max - gui.u_min);
+        var xscale = zrange / scene.view.size.meters.x;
+        gui.scaleFactor = xscale +''; // convert to string to make the display read-only
+
+        scene.styles.hillshade.shaders.uniforms.u_min = minadj;
+        scene.styles.hillshade.shaders.uniforms.u_max = maxadj;
+
+        // update dat.gui controllers
+        gui.u_min = minadj;
+        gui.u_max = maxadj;
+        updateGUI();
+
+        return {max: maxadj, min: minadj}
     }
 
     window.layer = layer;
@@ -188,7 +218,8 @@ map = (function () {
             scene.styles.hillshade.shaders.uniforms.u_max = value;
             scene.requestRedraw();
         });
-        gui.u_min = -10916.;
+        // gui.u_min = -10916.;
+        gui.u_min = 0.;
         gui.add(gui, 'u_min', -10916., 8848).name("min elevation").onChange(function(value) {
             scene.styles.hillshade.shaders.uniforms.u_min = value;
             scene.requestRedraw();
@@ -202,6 +233,8 @@ map = (function () {
                 // store slider values
                 uminValue = gui.u_min;
                 umaxValue = gui.u_max;
+                // force widening value to trigger redraw
+                lastumax = 0;
                 expose();
             } else if (typeof uminValue != 'undefined') {
                 // retrieve slider values
@@ -215,9 +248,10 @@ map = (function () {
         });
         gui.include_oceans = false;
         gui.add(gui, 'include_oceans').name("include ocean data").onChange(function(value) {
-            if (value) global_min = -10916;
+            if (value) global_min = -11000;
             else global_min = 0;
-            scene.styles.hillshade.shaders.uniforms.u_min = uminValue;
+            gui.u_min = global_min;
+            scene.styles.hillshade.shaders.uniforms.u_min = global_min;
             expose();
         });
         gui.export = function () {
@@ -234,6 +268,17 @@ map = (function () {
         gui.__controllers[2].domElement.firstChild.setAttribute("readonly", true);
 
     }
+function stop() {
+    console.log('stopping')
+    stopped = true;
+    console.log('stopping:', stopped)
+    
+}
+function go() {
+    stopped = false;
+}
+window.stop = stop;
+window.go = go;
 
     // disable sliders when autoexpose is on
     function sliderState(active) {
@@ -253,19 +298,23 @@ map = (function () {
     }
 
 
-    document.onkeypress = function (e) {
+    document.onkeydown = function (e) {
         e = e || window.event;
-        // listen for "h"
-        if (e.which == 104 && document.activeElement != document.getElementsByClassName('leaflet-pelias-input')[0]) {
+        // listen for 'h'
+        if (e.which == 72 && document.activeElement != document.getElementsByClassName('leaflet-pelias-input')[0]) {
             // toggle UI
             var display = map._controlContainer.style.display;
             map._controlContainer.style.display = (display === "none") ? "block" : "none";
             document.getElementsByClassName('dg')[0].style.display = (display === "none") ? "block" : "none";
+        // listen for 'esc'
+        } else if (e.which == 27) {
+            toggleHelp(false);
         }
     };
 
     /***** Render loop *****/
-
+var done = false;
+var tempCanvas;
     window.addEventListener('load', function () {
         // Scene initialized
         layer.on('init', function() {
@@ -276,19 +325,18 @@ map = (function () {
                 // will be triggered when tiles are finished loading
                 // and also manually by the moveend event
                 view_complete: function() {
-                    // perform analysis
-                    if (!moving) expose();
                 }
             });
             scene_loaded = true;
 
             sliderState(false);
 
+            tempCanvas = document.createElement("canvas");
+            tempCanvas.width = scene.canvas.width/4; 
+            tempCanvas.height = scene.canvas.height/4;
+    
         });
         layer.addTo(map);
-
-        // tuck curtain between leaflet controls and map
-        map._container.insertBefore(curtain, map._container.firstChild);
 
         // bind help div onclicks
         document.getElementById('help').onclick = function(){toggleHelp(false)};
