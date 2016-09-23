@@ -38,7 +38,6 @@ map = (function () {
     var diff = null;
     var stopped = false; // emergency brake
     var widening = false;
-    var lining = false;
 
     var layer = Tangram.leafletLayer({
         scene: 'scene.yaml',
@@ -56,7 +55,6 @@ map = (function () {
                 }
                 // 3) stop analysis and reset
                 else if (done) {
-                    // show lines if necessary
                     done = false;
                 }
             }
