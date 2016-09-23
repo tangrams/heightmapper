@@ -11,6 +11,8 @@ map = (function () {
     var scene_loaded = false;
     var moving = false;
     var analysing = false;
+    var done = false;
+    var tempCanvas;
 
     /*** URL parsing ***/
 
@@ -116,6 +118,7 @@ map = (function () {
     function analyse() {
         var ctx = tempCanvas.getContext("2d"); // Get canvas 2d context
         ctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+
         // redraw canvas smaller in testing canvas, for speed
         ctx.drawImage(scene.canvas,0,0,scene.canvas.width/4,scene.canvas.height/4);
         // get all the pixels
@@ -254,6 +257,14 @@ map = (function () {
             scene.styles.hillshade.shaders.uniforms.u_min = global_min;
             expose();
         });
+        gui.map_lines = false;
+        gui.add(gui, 'map_lines').name("map lines").onChange(function(value) {
+            toggleLines(value);
+        });
+        gui.map_labels = false;
+        gui.add(gui, 'map_labels').name("map labels").onChange(function(value) {
+            toggleLabels(value);
+        });
         gui.export = function () {
             // button to open screenshot in a new tab – 'save as' to save to disk
             scene.screenshot().then(function(screenshot) { window.open(screenshot.url); });
@@ -297,6 +308,18 @@ window.go = go;
         document.getElementById('help-blocker').style.visibility = visibility;
     }
 
+    // draw boundary and water lines
+    function toggleLines(active) {
+        // scene.config.layers.water.visible = active;
+        scene.styles.togglelines.shaders.uniforms.u_alpha = active ? 1. : 0.;
+        scene.requestRedraw();
+    }
+    // draw labels
+    function toggleLabels(active) {
+        // scene.config.layers.water.visible = active;
+        scene.styles.toggletext.shaders.uniforms.u_alpha = active ? 1. : 0.;
+        scene.requestRedraw();
+    }
 
     document.onkeydown = function (e) {
         e = e || window.event;
@@ -313,8 +336,6 @@ window.go = go;
     };
 
     /***** Render loop *****/
-var done = false;
-var tempCanvas;
     window.addEventListener('load', function () {
         // Scene initialized
         layer.on('init', function() {

@@ -3,7 +3,10 @@ sources:
         type: Raster
         url: https://terrain-preview.mapzen.com/terrarium/{z}/{x}/{y}.png
         max_zoom: 15
-
+    osm: 
+        type: TopoJSON
+        url: https://vector.mapzen.com/osm/all/{z}/{x}/{y}.topojson?api_key=vector-tiles-JUsa0Gc
+        max_zoom: 16
 styles: 
     hillshade:
         base: raster
@@ -27,6 +30,24 @@ styles:
 
                     color.rgb = vec3(new_value);
                     color.a = 1.0;
+    togglelines:
+        base: lines
+        blend: overlay
+        shaders:
+            uniforms:
+                u_alpha: .0
+            blocks:
+                color:
+                    color.a *= u_alpha;
+    toggletext:
+        base: text
+        blend: overlay
+        shaders:
+            uniforms:
+                u_alpha: .0
+            blocks:
+                color:
+                    color.a *= u_alpha;
 
 layers:
     terrain:
@@ -34,3 +55,55 @@ layers:
         draw:
             hillshade:
                 order: 0
+    water:
+        data: { source: osm }
+        draw:
+            toggletext:
+                buffer: 30px
+                font:
+                    family: Arial
+                    size: 10px
+                    fill: [0, .5, .5]
+        ocean:
+            filter:
+                kind: ocean
+            draw:
+                togglelines:
+                    order: 1
+                    width: 1.5px
+                    color: [0, 1, 1]
+        other:
+            filter:
+                not:
+                    kind: ocean
+            draw:
+                togglelines:
+                    order: 1
+                    width: .5px
+                    color: [0, .5, .5]
+    boundaries:
+        data: { source: osm }
+        country:
+            filter:
+                kind: country
+            draw:
+                togglelines:
+                    order: 2
+                    width: 1px
+                    color: [0, 1, 1]
+        state:
+            filter:
+                kind: state
+            draw:
+                togglelines:
+                    order: 2
+                    width: 1px
+                    color: [0, .5, .5]
+    places:
+        data: { source: osm }
+        draw:
+            toggletext:
+                font:
+                    family: Arial
+                    size: 10px
+                    fill: cyan
