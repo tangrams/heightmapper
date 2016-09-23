@@ -6,13 +6,19 @@ map = (function () {
 
     var map_start_location = [0, 0, 2];
     var global_min = 0;
-    var global_max = 8848;
+    var global_max = 8900;
     var uminValue, umaxValue; // storage
     var scene_loaded = false;
     var moving = false;
     var analysing = false;
     var done = false;
     var tempCanvas;
+    var spread = 1;
+    var lastumax = null;
+    var diff = null;
+    var stopped = false; // emergency brake
+    var widening = false;
+    var tempFactor = 8; // size of tempCanvas relative to main canvas: 1/n
 
     /*** URL parsing ***/
 
@@ -33,11 +39,6 @@ map = (function () {
         "inertiaDeceleration" : 10000,
         "zoomSnap" : .001}
     );
-    var spread = 1;
-    var lastumax = null;
-    var diff = null;
-    var stopped = false; // emergency brake
-    var widening = false;
 
     var layer = Tangram.leafletLayer({
         scene: 'scene.yaml',
@@ -120,7 +121,7 @@ map = (function () {
         ctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
 
         // redraw canvas smaller in testing canvas, for speed
-        ctx.drawImage(scene.canvas,0,0,scene.canvas.width/4,scene.canvas.height/4);
+        ctx.drawImage(scene.canvas,0,0,scene.canvas.width/tempFactor,scene.canvas.height/tempFactor);
         // get all the pixels
         var pixels = ctx.getImageData(0,0, tempCanvas.width, tempCanvas.height);
 
@@ -352,10 +353,12 @@ window.go = go;
             scene_loaded = true;
 
             sliderState(false);
-
             tempCanvas = document.createElement("canvas");
-            tempCanvas.width = scene.canvas.width/4; 
-            tempCanvas.height = scene.canvas.height/4;
+            // document.body.appendChild(tempCanvas);
+            // tempCanvas.style.position = "absolute";
+            // tempCanvas.style.zIndex = 10000;
+            tempCanvas.width = scene.canvas.width/tempFactor; 
+            tempCanvas.height = scene.canvas.height/tempFactor;
     
         });
         layer.addTo(map);
