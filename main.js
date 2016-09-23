@@ -233,6 +233,8 @@ map = (function () {
                 // store slider values
                 uminValue = gui.u_min;
                 umaxValue = gui.u_max;
+                // force widening value to trigger redraw
+                lastumax = 0;
                 expose();
             } else if (typeof uminValue != 'undefined') {
                 // retrieve slider values
