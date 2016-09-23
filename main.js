@@ -248,9 +248,10 @@ map = (function () {
         });
         gui.include_oceans = false;
         gui.add(gui, 'include_oceans').name("include ocean data").onChange(function(value) {
-            if (value) global_min = -10916;
+            if (value) global_min = -11000;
             else global_min = 0;
-            scene.styles.hillshade.shaders.uniforms.u_min = uminValue;
+            gui.u_min = global_min;
+            scene.styles.hillshade.shaders.uniforms.u_min = global_min;
             expose();
         });
         gui.export = function () {
