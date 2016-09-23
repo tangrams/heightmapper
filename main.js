@@ -150,20 +150,19 @@ var diff = null;
             // no pixels found, skip the analysis
             return false;
         }
-        if (max == 255 && min == 0 && diff <= 0 ) {
-            // console.log('max, min:', max, min, '  diff:', diff)
+        if (max == 255 && min == 0 && diff < 0 ) {
+            console.log('max, min:', max, min, '  diff:', diff)
             // looks good, done
-            // console.log("DONE")
+            console.log("DONE")
             analysing = false;
             done = true;
             spread = 2;
             return false;
-            // return {max: gui.u_max, min: gui.u_min}
         }
         if (max == 255 && min == 0) {
             // over-exposed, widen the range
             spread *= 2;
-            // console.log("WIDEN >", spread)
+            console.log("WIDEN >", spread)
             max += spread;
             min -= spread;
         }
