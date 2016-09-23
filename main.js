@@ -35,23 +35,25 @@ map = (function () {
 var do_analyse = false;
 var lastmax, lastmin;
 var secondtime = false;
-var lastspread = 0;
+var spread = 1;
+var lastumax = null;
+var diff = null;
     var layer = Tangram.leafletLayer({
         scene: 'scene.yaml',
         attribution: 'Map by <a href="https://mapzen.com/tangram" target="_blank">Tangram</a> | <a href="https://github.com/tangram/heightmapper" target="_blank">Fork This</a>',
         postUpdate: function() {
             if (gui.autoexpose) {
+                // three stages:
+                // 1) start analysis
                 if (!analysing && !done) { 
-                    console.log('\nEXPOSE!')
-                    // analysing = true;
                     expose();
                 }
+                // 2) continue analysis
                 else if (analysing && !done) {
-                    console.log('ANALYSE!')
                     start_analysis();
                 }
+                // 3) stop analysis and reset
                 else if (done) {
-                    console.log('DONE!')
                     lastmax = 0;
                     lastmin = 255;
                     done = false;
@@ -82,7 +84,6 @@ var lastspread = 0;
     }
 
     function expose() {
-        // console.log(" > expose()")
         analysing = true;
         if (typeof gui != 'undefined' && gui.autoexpose == false) return false;
         if (scene_loaded) {
@@ -105,17 +106,17 @@ var lastspread = 0;
     function start_analysis() {
         // set levels
         var levels = analyse();
-        console.log('levels:', levels)
+        diff = levels.max - lastumax;
+        if (typeof levels.max !== 'undefined') lastumax = levels.max;
+        else diff = 1;
         scene.styles.hillshade.shaders.uniforms.u_min = levels.min;
         scene.styles.hillshade.shaders.uniforms.u_max = levels.max;
         scene.requestRedraw();
-
     }
 
     function analyse() {
-        // console.log("analyse():")
-
         var ctx = tempCanvas.getContext("2d"); // Get canvas 2d context
+        ctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
         // redraw canvas smaller in testing canvas, for speed
         ctx.drawImage(scene.canvas,0,0,scene.canvas.width/4,scene.canvas.height/4);
         // get all the pixels
@@ -132,6 +133,7 @@ var lastspread = 0;
             val = pixels.data[i];
             var alpha = pixels.data[i+3];
             if (alpha === 0) { // empty pixel, skip to the next one
+                // console.log('empty')
                 continue;
             }
             // if we got this far, we found at least one non-empty pixel!
@@ -148,47 +150,45 @@ var lastspread = 0;
             // no pixels found, skip the analysis
             return false;
         }
-
-
-        var spread = lastspread + 10;
-        lastspread = spread;
-        console.log('>', spread)
-        console.log(min+', '+max+'  last: '+lastmin+', '+lastmax)
-
-        if (max == 255 && min == 0 && lastmin < spread ) {
-            // looks good
-            console.log('DONE')
+        if (max == 255 && min == 0 && diff <= 0 ) {
+            // console.log('max, min:', max, min, '  diff:', diff)
+            // looks good, done
+            // console.log("DONE")
             analysing = false;
             done = true;
-            lastspread = 0;
+            spread = 2;
             return false;
+            // return {max: gui.u_max, min: gui.u_min}
         }
         if (max == 255 && min == 0) {
-            console.log('WIDER')
+            // over-exposed, widen the range
+            spread *= 2;
+            // console.log("WIDEN >", spread)
             max += spread;
             min -= spread;
         }
-        else if (lastmin != 255) {
-            console.log('NARROWER')
-            // done = true;
-        }
-
         lastmax = max;
         lastmin = min;
 
-        // 
+        // calculate adjusted elevation settings based on current pixel
+        // values and elevation settings
         var range = (gui.u_max - gui.u_min);
         var minadj = (min / 255) * range + gui.u_min;
         var maxadj = (max / 255) * range + gui.u_min;
 
+        // keep levels in range
+        minadj = Math.max(minadj, -11000);
+        maxadj = Math.min(maxadj, 8900);
         // only let the minimum value go below 0 if ocean data is included
         minadj = gui.include_oceans ? minadj : Math.max(minadj, 0);
+
+        // keep min and max separated
+        if (minadj === maxadj) maxadj += 10;
 
         // get the width of the current view in meters
         // compare to the current elevation range in meters
         // the ratio is the "height" of the current scene compared to its width –
         // multiply it by the width of your 3D mesh to get the height
-
         var zrange = (gui.u_max - gui.u_min);
         var xscale = zrange / scene.view.size.meters.x;
         gui.scaleFactor = xscale +''; // convert to string to make the display read-only
@@ -338,10 +338,7 @@ var tempCanvas;
             scene.requestRedraw();
         }, 250);
 
-        map.on("movestart", function (e) { moving = true;
-                            // done = false;
-                            // console.log('done:', done)
-         });
+        map.on("movestart", function (e) { moving = true; });
         map.on("moveend", function (e) { moveend(e) });
 
     });
