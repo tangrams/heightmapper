@@ -31,18 +31,17 @@ map = (function () {
         "inertiaDeceleration" : 10000,
         "zoomSnap" : .001}
     );
-    var ready = false;
-var do_analyse = false;
-var lastmax, lastmin;
-var secondtime = false;
-var spread = 1;
-var lastumax = null;
-var diff = null;
+    var spread = 1;
+    var lastumax = null;
+    var diff = null;
+    var stopped = false; // emergency brake
+    var widening = false;
+
     var layer = Tangram.leafletLayer({
         scene: 'scene.yaml',
         attribution: 'Map by <a href="https://mapzen.com/tangram" target="_blank">Tangram</a> | <a href="https://github.com/tangram/heightmapper" target="_blank">Fork This</a>',
         postUpdate: function() {
-            if (gui.autoexpose) {
+            if (gui.autoexpose && !stopped) {
                 // three stages:
                 // 1) start analysis
                 if (!analysing && !done) { 
@@ -54,8 +53,6 @@ var diff = null;
                 }
                 // 3) stop analysis and reset
                 else if (done) {
-                    lastmax = 0;
-                    lastmin = 255;
                     done = false;
                 }
             }
@@ -109,6 +106,8 @@ var diff = null;
         diff = levels.max - lastumax;
         if (typeof levels.max !== 'undefined') lastumax = levels.max;
         else diff = 1;
+        // was the last change a widening or narrowing?
+        widening = diff < 0 ? false : true;
         scene.styles.hillshade.shaders.uniforms.u_min = levels.min;
         scene.styles.hillshade.shaders.uniforms.u_max = levels.max;
         scene.requestRedraw();
@@ -133,7 +132,6 @@ var diff = null;
             val = pixels.data[i];
             var alpha = pixels.data[i+3];
             if (alpha === 0) { // empty pixel, skip to the next one
-                // console.log('empty')
                 continue;
             }
             // if we got this far, we found at least one non-empty pixel!
@@ -150,24 +148,22 @@ var diff = null;
             // no pixels found, skip the analysis
             return false;
         }
-        if (max == 255 && min == 0 && diff < 0 ) {
-            console.log('max, min:', max, min, '  diff:', diff)
+        if (max > 253 && min < 4 && !widening ) {
             // looks good, done
-            console.log("DONE")
             analysing = false;
             done = true;
             spread = 2;
             return false;
         }
-        if (max == 255 && min == 0) {
+        if (max > 252 && min < 4 && widening) {
             // over-exposed, widen the range
             spread *= 2;
-            console.log("WIDEN >", spread)
+            // cap spread
+            spread = Math.min(spread, 512)
+            // console.log("WIDEN >", spread, "   diff:", diff)
             max += spread;
             min -= spread;
         }
-        lastmax = max;
-        lastmin = min;
 
         // calculate adjusted elevation settings based on current pixel
         // values and elevation settings
