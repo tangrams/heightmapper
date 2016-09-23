@@ -265,6 +265,17 @@ map = (function () {
         gui.__controllers[2].domElement.firstChild.setAttribute("readonly", true);
 
     }
+function stop() {
+    console.log('stopping')
+    stopped = true;
+    console.log('stopping:', stopped)
+    
+}
+function go() {
+    stopped = false;
+}
+window.stop = stop;
+window.go = go;
 
     // disable sliders when autoexpose is on
     function sliderState(active) {
