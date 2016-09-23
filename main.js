@@ -295,14 +295,17 @@ window.go = go;
     }
 
 
-    document.onkeypress = function (e) {
+    document.onkeydown = function (e) {
         e = e || window.event;
-        // listen for "h"
-        if (e.which == 104 && document.activeElement != document.getElementsByClassName('leaflet-pelias-input')[0]) {
+        // listen for 'h'
+        if (e.which == 72 && document.activeElement != document.getElementsByClassName('leaflet-pelias-input')[0]) {
             // toggle UI
             var display = map._controlContainer.style.display;
             map._controlContainer.style.display = (display === "none") ? "block" : "none";
             document.getElementsByClassName('dg')[0].style.display = (display === "none") ? "block" : "none";
+        // listen for 'esc'
+        } else if (e.which == 27) {
+            toggleHelp(false);
         }
     };
 
