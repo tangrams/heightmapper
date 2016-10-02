@@ -13,6 +13,7 @@ map = (function () {
     var analysing = false;
     var done = false;
     var tempCanvas;
+    var threeCanvas;
     var spread = 1;
     var lastumax = null;
     var diff = null;
@@ -59,6 +60,8 @@ map = (function () {
                     done = false;
                 }
             }
+            // draw a fake 3D view of the main canvas into the threecanvas
+            threeify();
         }
     });
     
@@ -201,6 +204,10 @@ map = (function () {
         updateGUI();
 
         return {max: maxadj, min: minadj}
+    }
+
+    function threeify() {
+
     }
 
     window.layer = layer;
@@ -354,12 +361,25 @@ window.go = go;
 
             sliderState(false);
             tempCanvas = document.createElement("canvas");
+            tempCanvas.id = "tempCanvas";
             // document.body.appendChild(tempCanvas);
-            // tempCanvas.style.position = "absolute";
+            tempCanvas.style.visible = "hidden";
             // tempCanvas.style.zIndex = 10000;
             tempCanvas.width = scene.canvas.width/tempFactor; 
             tempCanvas.height = scene.canvas.height/tempFactor;
     
+            threeCanvas = document.createElement("canvas");
+            threeCanvas.id = "threeCanvas";
+            document.body.appendChild(threeCanvas);
+            threeCanvas.style.position = "absolute";
+            threeCanvas.style.zIndex = 10000;
+            threeCanvas.width = scene.canvas.width/2; 
+            threeCanvas.height = scene.canvas.height/2;
+
+            threestart();
+            var scaleVal = 25.0;
+            uniforms[ "uDisplacementScale" ].value = scaleVal;
+
         });
         layer.addTo(map);
 

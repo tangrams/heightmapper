@@ -13,6 +13,8 @@
     <title>Tangram Heightmapper</title>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0-rc.1/leaflet.css" />
+    <script type="text/javascript" src="lib/three.js"></script>
+    <script src="lib/TrackballControls.js"></script>
 
     <style>
         body {
@@ -119,7 +121,9 @@
 
         </div>
     </div>
+  <div id="container"></div>
     <div id="help-blocker"></div>
+
     <div id="map"></div>
 
     <!-- 3rd party libraries -->
@@ -133,6 +137,9 @@
     <!-- Main tangram library -->
     <script src="https://mapzen.com/tangram/tangram.min.js"></script>
     
+    <script src="3dcanvas.js"></script>
+
+
     <!-- Demo module -->
     <script src="main.js"></script>
 
