@@ -32,8 +32,8 @@ function threestart() {
     var height = renderer.domElement.height;
     var aspect = width / height; // view aspect ratio
     camera = new THREE.PerspectiveCamera( fov, aspect );
-    camera.position.z = -500;
-    camera.position.y = -700;
+    camera.position.z = -400;
+    camera.position.y = -600;
     camera.lookAt(scene.position);
     camera.updateMatrix();
 
@@ -92,7 +92,7 @@ function threestart() {
     
     // GEOMETRY
     var c = document.getElementById("container");
-    geometry = new THREE.PlaneGeometry(256, 256, 256, 256);
+    geometry = new THREE.PlaneGeometry(256, 256, 512, 512);
     // geometry = new THREE.PlaneGeometry(c.clientWidth, c.clientWidth, c.clientHeight, c.clientHeight);
     geometry.computeTangents();
     mesh = new THREE.Mesh( geometry, material);

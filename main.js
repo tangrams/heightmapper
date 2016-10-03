@@ -19,7 +19,7 @@ map = (function () {
     var diff = null;
     var stopped = false; // emergency brake
     var widening = false;
-    var tempFactor = 8; // size of tempCanvas relative to main canvas: 1/n
+    var tempFactor = 4; // size of tempCanvas relative to main canvas: 1/n
 
     /*** URL parsing ***/
 
