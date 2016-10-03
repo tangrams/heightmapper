@@ -1,6 +1,5 @@
 
-var threecanvas;
-var ictx;
+var canvas;
             
 var camera, scene, renderer, container;
 var light, pointLight, geometry, mesh;
@@ -9,15 +8,14 @@ var heightmap, diffTexture, dispTexture;
 
 function threestart() {
 
-    threecanvas = document.getElementById("tempCanvas");
-    ictx=threecanvas.getContext("2d");
     container = document.getElementById( 'container' );
+    canvas = document.getElementById("tempCanvas");
 
     // --- WebGl render
 
     try {
         renderer = new THREE.WebGLRenderer();
-        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.setSize( container.clientWidth, container.clientHeight );
         renderer.autoClear = false;
         container.appendChild( renderer.domElement );
     }
@@ -34,8 +32,8 @@ function threestart() {
     var height = renderer.domElement.height;
     var aspect = width / height; // view aspect ratio
     camera = new THREE.PerspectiveCamera( fov, aspect );
-    camera.position.z = -600;
-    camera.position.y = -800;
+    camera.position.z = -500;
+    camera.position.y = -700;
     camera.lookAt(scene.position);
     camera.updateMatrix();
 
@@ -52,16 +50,21 @@ function threestart() {
     
     // --- Lights
             
-    pointLight = new THREE.PointLight( 0xffffff, 1.0 );
-    scene.add( pointLight );
+    // pointLight = new THREE.PointLight( 0xffffff, 1.0 );
+    // scene.add( pointLight );
     
-    pointLight.position.set(0, 100, -200);
+    // pointLight.position.set(0, 100, -200);
+            
+    ambientLight = new THREE.AmbientLight( 0xffffff, 1.0 );
+    scene.add( ambientLight );
+    
+    ambientLight.position.set(0, 100, -200);
 
 
     
     // MATERIAL
 
-    dispTexture = new THREE.Texture(threecanvas);
+    dispTexture = new THREE.Texture(canvas);
     
     var shader = THREE.ShaderLib[ "normalmap" ];
     uniforms = THREE.UniformsUtils.clone( shader.uniforms );
@@ -81,14 +84,16 @@ function threestart() {
         uniforms: uniforms,
         vertexShader: shader.vertexShader,
         fragmentShader: shader.fragmentShader,
+        // lights: false,
         lights: true,
         side: THREE.DoubleSide
     } );
 
     
     // GEOMETRY
-
-    geometry = new THREE.PlaneGeometry(256, 200, 256, 200);
+    var c = document.getElementById("container");
+    geometry = new THREE.PlaneGeometry(256, 256, 256, 256);
+    // geometry = new THREE.PlaneGeometry(c.clientWidth, c.clientWidth, c.clientHeight, c.clientHeight);
     geometry.computeTangents();
     mesh = new THREE.Mesh( geometry, material);
     mesh.rotation.y = Math.PI;
