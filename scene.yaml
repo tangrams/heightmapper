@@ -12,13 +12,16 @@ styles:
         base: raster
         shaders:
             uniforms:
-                # set min and max to the levels used by the tiles team
+                # set desired visible elevation range
                 u_max: 8900. # everest = 8848
-                u_min: 0. # challenger deep = -10916
+                u_min: 0. # sea level
                 # u_min: -11000. # challenger deep = -10916
             blocks:
                 global: |
                     float unpack(vec4 h) {
+                        // unpack data to range [-32768, 32768], the range in the raw data
+                        // "* 255." is necessary because each the GPU reads each channel as a range from 0 - 1
+                        // and we want it in a range from 0-255, as it was encoded in the raster image
                         return (h.r * 256. + h.g + h.b / 256.) * 255. - 32768.;
                     }
                 color: |
