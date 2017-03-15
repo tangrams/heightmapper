@@ -1,11 +1,15 @@
 sources:
     elevation:
         type: Raster
-        url: https://tile.mapzen.com/mapzen/terrain/v1/terrarium/{z}/{x}/{y}.png?api_key=vector-tiles-AGr6avQ
+        url: https://tile.mapzen.com/mapzen/terrain/v1/terrarium/{z}/{x}/{y}.png
+        url_params:
+            api_key: vector-tiles-AGr6avQ
         max_zoom: 15
     osm: 
         type: TopoJSON
-        url: https://tile.mapzen.com/mapzen/vector/v1/all/{z}/{x}/{y}.topojson?api_key=vector-tiles-AGr6avQ
+        url: https://tile.mapzen.com/mapzen/vector/v1/all/{z}/{x}/{y}.topojson
+        url_params:
+            api_key: vector-tiles-AGr6avQ
         max_zoom: 16
 styles: 
     hillshade:
