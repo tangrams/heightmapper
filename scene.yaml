@@ -5,7 +5,7 @@ sources:
         url_params:
             api_key: vector-tiles-AGr6avQ
         max_zoom: 15
-    osm: 
+    mapzen: 
         type: TopoJSON
         url: https://tile.mapzen.com/mapzen/vector/v1/all/{z}/{x}/{y}.topojson
         url_params:
@@ -63,7 +63,7 @@ layers:
             hillshade:
                 order: 0
     water:
-        data: { source: osm }
+        data: { source: mapzen }
         draw:
             toggletext:
                 buffer: 30px
@@ -89,7 +89,7 @@ layers:
                     width: .5px
                     color: [0, .5, .5]
     boundaries:
-        data: { source: osm }
+        data: { source: mapzen }
         country:
             filter:
                 kind: country
@@ -107,7 +107,7 @@ layers:
                     width: 1px
                     color: [0, .5, .5]
     places:
-        data: { source: osm }
+        data: { source: mapzen }
         draw:
             toggletext:
                 font:
