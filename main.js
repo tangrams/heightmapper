@@ -269,8 +269,10 @@ map = (function () {
             toggleLabels(value);
         });
         gui.export = function () {
-            // button to open screenshot in a new tab – 'save as' to save to disk
-            scene.screenshot().then(function(screenshot) { window.open(screenshot.url); });
+            return scene.screenshot().then(function(screenshot) {
+                // uses FileSaver.js: https://github.com/eligrey/FileSaver.js/
+                saveAs(screenshot.blob, 'heightmapper-' + (+new Date()) + '.png');
+            });
         }
         gui.add(gui, 'export');
         gui.help = function () {
