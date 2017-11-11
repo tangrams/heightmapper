@@ -13,7 +13,7 @@ Uses [Mapzen's](http://mapzen.com/tangrams/tangram) global [elevation service](h
 - Uncheck "auto-expose" to set min and max height levels manually.
 - Check "show lines" and "show labels" to see more map data.
 - Click "export" to open the current view as an image in a new tab - "Save As" to save the image to disk.
-- Import the resulting image as a "displacement map" in a 3D application to generate a 3D model of the terrain. ([Here's a tutorial for doing this in Blender.](https://github.com/tangrams/heightmapper/blob/gh-pages/exporting_to_blender.md))
+- Import the resulting image as a "displacement map" in a 3D application to generate a 3D model of the terrain. ([Here's a tutorial for doing this in Blender.](https://github.com/tangrams/heightmapper/blob/master/exporting_to_blender.md))
 - The "z:x scale factor" describes how "high" the current view is, on the z-axis, in terms of how wide the current view is on the x-axis. Multiplying this scale factor by the width of a 3D mesh in units x will tell you how high in units z your mesh should be after displacement in order to be true-scale.
 - Press the "h" key to toggle UI visibility.
 
