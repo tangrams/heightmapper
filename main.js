@@ -32,6 +32,28 @@ map = (function () {
         map_start_location = map_start_location.map(Number);
     }
 
+    var query = splitQueryParams();
+    // { language: 'en', this: 'no'}
+
+    function splitQueryParams () {
+       var str = window.location.search;
+
+       var kvArray = str.slice(1).split('&');
+       // ['language=en', 'this=no']
+
+       var obj = {};
+
+       for (var i = 0, j=kvArray.length; i<j; i++) {
+           var value = kvArray[i].split('=');
+           var k = window.decodeURIComponent(value[0]);
+           var v = window.decodeURIComponent(value[1]);
+
+           obj[k] = v;
+       }
+
+       return obj;
+    }
+
     /*** Map ***/
 
     var map = L.map('map',
