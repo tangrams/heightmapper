@@ -3,14 +3,21 @@ sources:
         type: Raster
         url: https://tile.mapzen.com/mapzen/terrain/v1/terrarium/{z}/{x}/{y}.png
         url_params:
-            api_key: mapzen-w46m9ph
+            api_key: mapzen-fSj9CFX
+        max_zoom: 3
+    elevation-high:
+        type: Raster
+        url: https://tile.mapzen.com/mapzen/terrain/v1/terrarium/{z}/{x}/{y}.png
+        url_params:
+            api_key: mapzen-XXXXXXX
+        min_zoom: 4
         max_zoom: 15
     mapzen: 
         type: TopoJSON
         url: https://tile.mapzen.com/mapzen/vector/v1/all/{z}/{x}/{y}.topojson
         url_params:
-            api_key: mapzen-w46m9ph
-        max_zoom: 16
+            api_key: mapzen-fSj9CFX
+        max_zoom: 5
 styles: 
     hillshade:
         base: raster
@@ -62,6 +69,12 @@ layers:
         draw:
             hillshade:
                 order: 0
+    terrain-high:
+        enabled: false
+        data: { source: elevation-high, layer: _default }
+        draw:
+            hillshade:
+                order: 1
     water:
         data: { source: mapzen }
         draw:
@@ -76,7 +89,7 @@ layers:
                 kind: ocean
             draw:
                 togglelines:
-                    order: 1
+                    order: 2
                     width: 1.5px
                     color: [0, 1, 1]
         other:
@@ -85,7 +98,7 @@ layers:
                     kind: ocean
             draw:
                 togglelines:
-                    order: 1
+                    order: 2
                     width: .5px
                     color: [0, .5, .5]
     boundaries:
@@ -95,7 +108,7 @@ layers:
                 kind: country
             draw:
                 togglelines:
-                    order: 2
+                    order: 3
                     width: 1px
                     color: [0, 1, 1]
         state:
@@ -103,7 +116,7 @@ layers:
                 kind: state
             draw:
                 togglelines:
-                    order: 2
+                    order: 3
                     width: 1px
                     color: [0, .5, .5]
     places:

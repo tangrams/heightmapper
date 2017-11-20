@@ -252,8 +252,10 @@ map = (function () {
             scene.styles.hillshade.shaders.uniforms.u_min = value;
             scene.requestRedraw();
         });
+
         gui.scaleFactor = 1 +'';
         gui.add(gui, 'scaleFactor').name("z:x scale factor");
+
         gui.autoexpose = true;
         gui.add(gui, 'autoexpose').name("auto-exposure").onChange(function(value) {
             sliderState(!value);
@@ -274,6 +276,7 @@ map = (function () {
                 updateGUI();
             }
         });
+
         gui.include_oceans = false;
         gui.add(gui, 'include_oceans').name("include ocean data").onChange(function(value) {
             if (value) global_min = -11000;
@@ -282,21 +285,42 @@ map = (function () {
             scene.styles.hillshade.shaders.uniforms.u_min = global_min;
             expose();
         });
+
         gui.map_lines = false;
         gui.add(gui, 'map_lines').name("map lines").onChange(function(value) {
             toggleLines(value);
         });
+
         gui.map_labels = false;
         gui.add(gui, 'map_labels').name("map labels").onChange(function(value) {
             toggleLabels(value);
         });
+
+        gui.API_KEY = query.api_key || 'mapzen-XXXXXX';
+        gui.add(gui, 'API_KEY').name("API KEY").onChange(function(value) {
+            scene.config.sources["elevation-high"].url_params.api_key = value;
+            scene.config.layers["terrain-high"].enabled = true;
+            scene.updateConfig();
+        });
+
         gui.export = function () {
             return scene.screenshot().then(function(screenshot) {
-                // uses FileSaver.js: https://github.com/eligrey/FileSaver.js/
-                saveAs(screenshot.blob, 'heightmapper-' + (+new Date()) + '.png');
+                if (gui.API_KEY === 'mapzen-XXXXXX') {
+                    alert('Please enter your API key!')
+                    scene.config.layers["terrain-high"].enabled = false;
+                    scene.updateConfig();
+                } else if (gui.API_KEY === scene.config.sources.elevation.url_params.api_key) {
+                    alert('Please enter your own API key!')
+                    scene.config.layers["terrain-high"].enabled = false;
+                    scene.updateConfig();
+                } else {
+                    // uses FileSaver.js: https://github.com/eligrey/FileSaver.js/
+                    saveAs(screenshot.blob, 'heightmapper-' + (+new Date()) + '.png');
+                }
             });
         }
         gui.add(gui, 'export');
+
         gui.help = function () {
             // show help screen and input blocker
             toggleHelp(true);
