@@ -360,6 +360,14 @@ window.go = go;
         document.getElementById('help-blocker').style.visibility = visibility;
     }
 
+    // show and hide new alert
+    function toggleNew(active) {
+        var visibility = active ? "visible" : "hidden";
+        document.getElementById('new').style.visibility = visibility;
+        // help-blocker prevents map interaction while help is visible
+        document.getElementById('help-blocker').style.visibility = visibility;
+    }
+
     // draw boundary and water lines
     function toggleLines(active) {
         // scene.config.layers.water.visible = active;
@@ -409,13 +417,14 @@ window.go = go;
             // tempCanvas.style.zIndex = 10000;
             tempCanvas.width = scene.canvas.width/tempFactor; 
             tempCanvas.height = scene.canvas.height/tempFactor;
-    
+
         });
         layer.addTo(map);
 
         // bind help div onclicks
         document.getElementById('help').onclick = function(){toggleHelp(false)};
-        document.getElementById('help-blocker').onclick = function(){toggleHelp(false)};
+        document.getElementById('new').onclick = function(){toggleNew(false)};
+        document.getElementById('help-blocker').onclick = function(){toggleHelp(false);toggleNew(false);};
 
         // debounce moveend event
         var moveend = debounce(function(e) {
@@ -428,6 +437,7 @@ window.go = go;
         map.on("movestart", function (e) { moving = true; });
         map.on("moveend", function (e) { moveend(e) });
 
+        toggleNew(true);
     });
 
     return map;
