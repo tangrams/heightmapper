@@ -17,7 +17,7 @@ sources:
         url: https://tile.mapzen.com/mapzen/vector/v1/all/{z}/{x}/{y}.topojson
         url_params:
             api_key: mapzen-fSj9CFX
-        max_zoom: 5
+        max_zoom: 15
 styles: 
     hillshade:
         base: raster
