@@ -1,23 +1,10 @@
 sources:
     elevation:
         type: Raster
-        url: https://tile.mapzen.com/mapzen/terrain/v1/terrarium/{z}/{x}/{y}.png
-        url_params:
-            api_key: mapzen-fSj9CFX
-        max_zoom: 3
-    elevation-high:
-        type: Raster
-        url: https://tile.mapzen.com/mapzen/terrain/v1/terrarium/{z}/{x}/{y}.png
-        url_params:
-            api_key: mapzen-XXXXXXX
-        min_zoom: 4
-        max_zoom: 15
+        url: https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png
     mapzen: 
         type: TopoJSON
-        url: https://tile.mapzen.com/mapzen/vector/v1/all/{z}/{x}/{y}.topojson
-        url_params:
-            api_key: mapzen-fSj9CFX
-        max_zoom: 15
+        url: https://meetar.github.io/mapzen-tiles/vector/v1/256/all/{z}/{x}/{y}.topojson
 styles: 
     hillshade:
         base: raster
