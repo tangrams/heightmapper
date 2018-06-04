@@ -1,10 +1,16 @@
 sources:
     elevation:
         type: Raster
-        url: https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png
+        url: https://tile.nextzen.org/tilezen/terrain/v1/256/terrarium/{z}/{x}/{y}.png
+        max_zoom: 14
+        url_params:
+            api_key: 3XqXMjEdT2StnrIRJ4HYbg
     mapzen: 
         type: TopoJSON
-        url: https://meetar.github.io/mapzen-tiles/vector/v1/256/all/{z}/{x}/{y}.topojson
+        url: https://tile.nextzen.org/tilezen/vector/v1/256/all/{z}/{x}/{y}.topojson
+        max_zoom: 16
+        url_params:
+            api_key: 3XqXMjEdT2StnrIRJ4HYbg
 styles: 
     hillshade:
         base: raster
@@ -56,16 +62,11 @@ layers:
         draw:
             hillshade:
                 order: 0
-    terrain-high:
-        enabled: false
-        data: { source: elevation-high, layer: _default }
-        draw:
-            hillshade:
-                order: 1
     water:
         data: { source: mapzen }
         draw:
             toggletext:
+                order: 1
                 buffer: 30px
                 font:
                     family: Arial
@@ -106,10 +107,18 @@ layers:
                     order: 3
                     width: 1px
                     color: [0, .5, .5]
+    roads:
+        data: { source: mapzen }
+        draw:
+            togglelines:
+                order: 3
+                width: .25px
+                color: [0, .5, .5]
     places:
         data: { source: mapzen }
         draw:
             toggletext:
+                order: 4
                 font:
                     family: Arial
                     size: 10px
