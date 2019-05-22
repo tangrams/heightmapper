@@ -4,14 +4,14 @@ sources:
         url: https://tile.nextzen.org/tilezen/terrain/v1/256/terrarium/{z}/{x}/{y}.png
         max_zoom: 14
         url_params:
-            api_key: 3XqXMjEdT2StnrIRJ4HYbg
-    mapzen: 
+            api_key: dmlO1fVQRPKI-GrVIYJ1YA
+    mapzen:
         type: TopoJSON
         url: https://tile.nextzen.org/tilezen/vector/v1/256/all/{z}/{x}/{y}.topojson
         max_zoom: 16
         url_params:
-            api_key: 3XqXMjEdT2StnrIRJ4HYbg
-styles: 
+            api_key: dmlO1fVQRPKI-GrVIYJ1YA
+styles:
     hillshade:
         base: raster
         shaders:
