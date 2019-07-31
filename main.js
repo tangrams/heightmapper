@@ -64,7 +64,7 @@ map = (function () {
 
     var layer = Tangram.leafletLayer({
         scene: 'scene.yaml',
-        attribution: 'Map by <a href="https://mapzen.com/tangram" target="_blank">Tangram</a> | <a href="https://github.com/tangram/heightmapper" target="_blank">Fork This</a>',
+        attribution: 'Map by <a href="https://mapzen.com/tangram" target="_blank">Tangram</a> | <a href="https://github.com/tangrams/heightmapper" target="_blank">Fork This</a>',
         postUpdate: function() {
             if (gui.autoexpose && !stopped) {
                 // three stages:
