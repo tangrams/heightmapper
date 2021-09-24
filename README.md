@@ -17,17 +17,20 @@ Uses [Mapzen's](http://mapzen.com/tangrams/tangram) global [elevation service](h
 - The "z:x scale factor" describes how "high" the current view is, on the z-axis, in terms of how wide the current view is on the x-axis. Multiplying this scale factor by the width of a 3D mesh in units x will tell you how high in units z your mesh should be after displacement in order to be true-scale.
 - Press the "h" key to toggle UI visibility.
 
-### Rendering (solved from todo)
+### Rendering
 
 - Render Multiplier (1 - 32) will split the view up into that number of cells on the x and y axis. i.e., a Render Multiplier of 4 will render a 4x4 grid.
 - Render Name is the name of the output file you want.
 - render will automatically zoom to each area and stitch together a high quality render, then save the render as `{render name}.png` to your downloads.
 
+> This comes with a gotcha: the map must take up the entire view (no whitespace above or below) for the renderer to work properly.
+>
 > Do not resize the view or move the map during render as this will interfere with the render process.
 
 ### Todo
 
 - add a GeoTIFF export option which includes metadata
+- fix render issue when the view bounds exceedes the latitiude.
 - **Super Extra Credit:** further export options including lat/lon bounding boxes, country/boundary masking using OSM vector tiles
 
 ### To run locally:
