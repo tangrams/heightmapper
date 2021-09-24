@@ -330,7 +330,7 @@ map = (function () {
         }
         gui.add(gui, 'export');
 
-        gui.zoomRender = 2;
+        gui.zoomRender = zoomRender;
         gui.add(gui, 'zoomRender', min_zoomRender, max_zoomRender, 1).name("Render Multiplier").onChange(function(value) {
           zoomRender = Math.round(value);
 
@@ -373,12 +373,16 @@ async function renderView() {
   const originalY = scene.canvas.height;
   const outputX = originalX * zoomRender;
   const outputY = originalY * zoomRender;
-  const size_mb = Math.ceil(scene.canvas.width * scene.canvas.height * zoomRender * zoomRender * mb_factor);
+  const size_mb = Math.ceil(scene.canvas.width * scene.canvas.height * zoomRender * mb_factor);
   const status = confirm(`Potential image size with ${zoomRender}x zoom render: ${size_mb} MB\nEstimated Dims: ${outputX}X${outputY} pixels.\nAn Alert will display when the render is complete.\nThis will take some time, continue?`);
 
   if(!status) {
     return;
   }
+
+  // Pre-redraw to make sure view is set:
+  map.invalidateSize(true);
+  await waitForSeconds(0.5);
 
   // TODO: lock interaction.
 
@@ -395,22 +399,21 @@ async function renderView() {
   const heightPerCell = scene.canvas.height / zoomRender;
 
   const captures = [];
-
+  const caputreOrigins = [];
   // Cache all the bounding box points before moving the map for each render.
   const cells = [];
   for(let i = 0; i < zoomRender; i++) {
     for(let j = 0; j < zoomRender; j++) {
-
-      // Get a bounding box of the Points:
-      const topLeftPoint = L.point(i * widthPerCell, j * heightPerCell, false);
-      const bottomRightPoint = L.point(
-        topLeftPoint.x + widthPerCell, topLeftPoint.y + heightPerCell, false
-        );
-      const topLeftCoords = map.layerPointToLatLng(topLeftPoint);
-      const bottomRightCoords = map.layerPointToLatLng(bottomRightPoint);
+      // Get a bounding box of the Points using northwest and southeast:
+      const nwPoint = L.point(i * widthPerCell, j * heightPerCell, false);
+      const sePoint = L.point(nwPoint.x + widthPerCell, nwPoint.y + heightPerCell, false);
+      // Use the map container and not layer PointToLatLng for the most current position.
+      const topLeftCoords = map.containerPointToLatLng(nwPoint);
+      const bottomRightCoords = map.containerPointToLatLng(sePoint);
       // Coordinate bounding box of where we want to be:
       const bounds = L.latLngBounds(topLeftCoords, bottomRightCoords);
-
+      // Cache the origin point of the cell for later (rounding errrors);
+      caputreOrigins.push(nwPoint);
       cells.push(bounds);
     }
   }
@@ -429,7 +432,6 @@ async function renderView() {
     const renderedCell = await scene.screenshot();
     captures[count] = renderedCell.url;
     // saveAs(renderedCell.blob, `render-cell-${count}.png`);
-    // Log status
     console.log(`Cell ${count} rendered`);
     count++
   }
@@ -443,14 +445,11 @@ async function renderView() {
   renderCanvas.height = outputY;
   const renderContext = renderCanvas.getContext("2d");
 
-  for(let i = 0; i < zoomRender; i++) {
-    for(let j = 0; j < zoomRender; j++) {
-      const xPixel = i * originalX;
-      const yPixel = j * originalY;
-      const index = (i * zoomRender) + j;
-      await addImageToCanvas(renderContext, captures[index], xPixel, yPixel);
-      console.log("added image to canvas");
-    }
+  for(let i = 0; i < captures.length; i++) {
+    const xPixel = caputreOrigins[i].x * zoomRender;
+    const yPixel = caputreOrigins[i].y * zoomRender;
+    await addImageToCanvas(renderContext, captures[i], xPixel, yPixel);
+    console.log("added image to canvas");
   }
 
   logRenderStep("Saving render");
