@@ -369,12 +369,14 @@ map = (function () {
   }
   
   async function renderView() {
+    // account for retina screens etc
+    let zoomFactor = zoomRender * window.devicePixelRatio;
     const originalX = scene.canvas.width;
     const originalY = scene.canvas.height;
     const outputX = originalX * zoomRender;
     const outputY = originalY * zoomRender;
-    const size_mb = Math.ceil(scene.canvas.width * scene.canvas.height * zoomRender * mb_factor);
-    const status = confirm(`Potential image size with ${zoomRender}x zoom render: ${size_mb} MB\nEstimated Dims: ${outputX}X${outputY} pixels.\nAn Alert will display when the render is complete.\nThis will take some time, continue?`);
+    const size_mb = Math.ceil(scene.canvas.width * scene.canvas.height * zoomFactor * mb_factor);
+    const status = confirm(`Potential image size with ${zoomRender}x zoom render: ${size_mb} MB\nEstimated dimensions: ${outputX}X${outputY} pixels.\nAn Alert will display when the render is complete.\nThis will take some time, continue?`);
     
     if(!status) {
       return;
@@ -394,10 +396,8 @@ map = (function () {
     // Turn off auto-exposure:
     const preRenderAutoExposureState = gui.autoexpose;
     gui.autoexpose = false;
-    
-    const widthPerCell = scene.canvas.width / zoomRender;
-    const heightPerCell = scene.canvas.height / zoomRender;
-    
+    const widthPerCell = scene.canvas.width / zoomFactor;
+    const heightPerCell = scene.canvas.height / zoomFactor;
     const captures = [];
     const caputreOrigins = [];
     // Cache all the bounding box points before moving the map for each render.
@@ -446,8 +446,8 @@ map = (function () {
     const renderContext = renderCanvas.getContext("2d");
     
     for(let i = 0; i < captures.length; i++) {
-      const xPixel = caputreOrigins[i].x * zoomRender;
-      const yPixel = caputreOrigins[i].y * zoomRender;
+      const xPixel = captureOrigins[i].x * zoomFactor;
+      const yPixel = captureOrigins[i].y * zoomFactor;
       await addImageToCanvas(renderContext, captures[i], xPixel, yPixel);
       console.log("added image to canvas");
     }
