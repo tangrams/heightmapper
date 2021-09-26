@@ -243,6 +243,8 @@ map = (function () {
   // setView expects format ([lat, long], zoom)
   map.setView(map_start_location.slice(0, 3), map_start_location[2]);
   
+  let hash = new L.Hash(map);
+
   // Create dat GUI
   var gui;
   function addGUI () {
