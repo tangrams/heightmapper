@@ -19,7 +19,7 @@ Uses [Mapzen's](http://mapzen.com/tangrams/tangram) global [elevation service](h
 
 ### Rendering
 
-- Render Multiplier (1 - 32) will split the view up into that number of cells on the x and y axis. i.e., a Render Multiplier of 4 will render a 4x4 grid.
+- Render Multiplier (1 - 8) will split the view up into that number of cells on the x and y axis. i.e., a Render Multiplier of 4 will render a 4x4 grid.
 - Render Name is the name of the output file you want.
 - render will automatically zoom to each area and stitch together a high quality render, then save the render as `{render name}.png` to your downloads.
 
@@ -30,7 +30,7 @@ Uses [Mapzen's](http://mapzen.com/tangrams/tangram) global [elevation service](h
 ### Todo
 
 - add a GeoTIFF export option which includes metadata
-- fix render issue when the view bounds exceedes the latitiude.
+- fix Render Multiplier issue when the view bounds exceeds the tile latitude limit.
 - **Super Extra Credit:** further export options including lat/lon bounding boxes, country/boundary masking using OSM vector tiles
 
 ### To run locally:
