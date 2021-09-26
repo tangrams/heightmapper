@@ -25,7 +25,7 @@ map = (function () {
   const mb_factor = 1.0 / (1024 * 1024);
   var zoomRender = 2;
   const min_zoomRender = 1;
-  const max_zoomRender = 32;
+  const max_zoomRender = 8; // if you need more, fork this repo and use your own api key!
   
   var renderName = {name: 'render'};
   
@@ -243,8 +243,6 @@ map = (function () {
   // setView expects format ([lat, long], zoom)
   map.setView(map_start_location.slice(0, 3), map_start_location[2]);
   
-  var hash = new L.Hash(map);
-  
   // Create dat GUI
   var gui;
   function addGUI () {
@@ -307,21 +305,21 @@ map = (function () {
     
     // gui.API_KEY = query.api_key || 'mapzen-XXXXXX';
     // gui.add(gui, 'API_KEY').name("API KEY").onChange(function(value) {
-    //     scene.config.sources["elevation-high"].url_params.api_key = value;
-    //     scene.config.layers["terrain-high"].enabled = true;
-    //     scene.updateConfig();
+    //   scene.config.sources["elevation-high"].url_params.api_key = value;
+    //   scene.config.layers["terrain-high"].enabled = true;
+    //   scene.updateConfig();
     // });
     
     gui.export = function () {
       return scene.screenshot().then(function(screenshot) {
         // if (gui.API_KEY === 'mapzen-XXXXXX') {
-        //     alert('Please enter your API key!')
-        //     scene.config.layers["terrain-high"].enabled = false;
-        //     scene.updateConfig();
+        //   alert('Please enter your API key!')
+        //   scene.config.layers["terrain-high"].enabled = false;
+        //   scene.updateConfig();
         // } else if (gui.API_KEY === scene.config.sources.elevation.url_params.api_key) {
-        //     alert('Please enter your own API key!')
-        //     scene.config.layers["terrain-high"].enabled = false;
-        //     scene.updateConfig();
+        //   alert('Please enter your own API key!')
+        //   scene.config.layers["terrain-high"].enabled = false;
+        //   scene.updateConfig();
         // } else {
         // uses FileSaver.js: https://github.com/eligrey/FileSaver.js/
         saveAs(screenshot.blob, 'heightmapper-' + (+new Date()) + '.png');
@@ -384,7 +382,6 @@ map = (function () {
     
     // Pre-redraw to make sure view is set:
     map.invalidateSize(true);
-    await waitForSeconds(0.5);
     
     // TODO: lock interaction.
     
@@ -399,7 +396,7 @@ map = (function () {
     const widthPerCell = scene.canvas.width / zoomFactor;
     const heightPerCell = scene.canvas.height / zoomFactor;
     const captures = [];
-    const caputreOrigins = [];
+    const captureOrigins = [];
     // Cache all the bounding box points before moving the map for each render.
     const cells = [];
     for(let i = 0; i < zoomRender; i++) {
@@ -413,7 +410,7 @@ map = (function () {
         // Coordinate bounding box of where we want to be:
         const bounds = L.latLngBounds(topLeftCoords, bottomRightCoords);
         // Cache the origin point of the cell for later (rounding errrors);
-        caputreOrigins.push(nwPoint);
+        captureOrigins.push(nwPoint);
         cells.push(bounds);
       }
     }
@@ -464,7 +461,6 @@ map = (function () {
     logRenderStep("Cleaning up");
     map.fitBounds(originalBounds);
     scene.requestRedraw();
-    await waitForSeconds(0.5);
     gui.autoexpose = preRenderAutoExposureState;
     alert("Render complete!");
   }
