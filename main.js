@@ -438,7 +438,9 @@ map = (function () {
         count++
       });
     }
-    
+
+    map.fitBounds(originalBounds);
+
     logRenderStep("Building final image");
     
     // Stitch the image together
@@ -461,8 +463,6 @@ map = (function () {
     
     // Clean up:
     logRenderStep("Cleaning up");
-    map.fitBounds(originalBounds);
-    scene.requestRedraw();
     gui.autoexpose = preRenderAutoExposureState;
     alert("Render complete!");
   }
