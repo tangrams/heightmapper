@@ -423,17 +423,21 @@ map = (function () {
     // Render each cell:
     let count = 0;
     for(const bounds of cells) {
-      map.fitBounds(bounds);
-      // FIXME: this is potentially sinister: if view_complete doesn't fire (or fires immediately), it will hang forever.
-      scene.requestRedraw();
-      await awaitViewComplete();
-      await waitForSeconds(0.5);
-      // Cache the screenshot
-      const renderedCell = await scene.screenshot();
-      captures[count] = renderedCell.url;
-      // saveAs(renderedCell.blob, `render-cell-${count}.png`);
-      console.log(`Cell ${count} rendered`);
-      count++
+      // wait for Leaflet moveend + zoomend events
+      await async function() {
+        return new Promise(resolve => {
+          map.once('moveend zoomend', resolve);
+          map.fitBounds(bounds);
+        });
+      }();
+      await awaitViewComplete().then(async () => {
+        // Cache the screenshot
+        const renderedCell = await scene.screenshot();
+        captures[count] = renderedCell.url;
+        // saveAs(renderedCell.blob, `render-cell-${count}.png`);
+        console.log(`Cell ${count} rendered`);
+        count++
+      });
     }
     
     logRenderStep("Building final image");
