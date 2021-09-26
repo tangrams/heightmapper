@@ -20,6 +20,15 @@ map = (function () {
     var widening = false;
     var tempFactor = 8; // size of tempCanvas relative to main canvas: 1/n
 
+    // Renderer:
+    // byte to mb factor:
+    const mb_factor = 1.0 / (1024 * 1024);
+    var zoomRender = 2;
+    const min_zoomRender = 1;
+    const max_zoomRender = 32;
+
+    var renderName = {name: 'render'};
+
     /*** URL parsing ***/
 
     // leaflet-style URL hash pattern:
@@ -321,6 +330,25 @@ map = (function () {
         }
         gui.add(gui, 'export');
 
+        gui.zoomRender = zoomRender;
+        gui.add(gui, 'zoomRender', min_zoomRender, max_zoomRender, 1).name("Render Multiplier").onChange(function(value) {
+          zoomRender = Math.round(value);
+
+        });
+
+        gui.renderName = renderName.name;
+        gui.add(gui, 'renderName').name('Render Name').onChange(function(value) {
+          renderName.name = value;
+        });
+
+        gui.render = function () {
+          renderView();
+        }
+
+        gui.add(gui, 'render');
+
+
+
         gui.help = function () {
             // show help screen and input blocker
             toggleHelp(true);
@@ -339,6 +367,145 @@ function stop() {
 function go() {
     stopped = false;
 }
+
+async function renderView() {
+  const originalX = scene.canvas.width;
+  const originalY = scene.canvas.height;
+  const outputX = originalX * zoomRender;
+  const outputY = originalY * zoomRender;
+  const size_mb = Math.ceil(scene.canvas.width * scene.canvas.height * zoomRender * mb_factor);
+  const status = confirm(`Potential image size with ${zoomRender}x zoom render: ${size_mb} MB\nEstimated Dims: ${outputX}X${outputY} pixels.\nAn Alert will display when the render is complete.\nThis will take some time, continue?`);
+
+  if(!status) {
+    return;
+  }
+
+  // Pre-redraw to make sure view is set:
+  map.invalidateSize(true);
+  await waitForSeconds(0.5);
+
+  // TODO: lock interaction.
+
+  logRenderStep("Preparing render");
+
+  // Store original bounds to return post render.
+  const originalBounds = map.getBounds();
+
+  // Turn off auto-exposure:
+  const preRenderAutoExposureState = gui.autoexpose;
+  gui.autoexpose = false;
+  
+  const widthPerCell = scene.canvas.width / zoomRender;
+  const heightPerCell = scene.canvas.height / zoomRender;
+
+  const captures = [];
+  const caputreOrigins = [];
+  // Cache all the bounding box points before moving the map for each render.
+  const cells = [];
+  for(let i = 0; i < zoomRender; i++) {
+    for(let j = 0; j < zoomRender; j++) {
+      // Get a bounding box of the Points using northwest and southeast:
+      const nwPoint = L.point(i * widthPerCell, j * heightPerCell, false);
+      const sePoint = L.point(nwPoint.x + widthPerCell, nwPoint.y + heightPerCell, false);
+      // Use the map container and not layer PointToLatLng for the most current position.
+      const topLeftCoords = map.containerPointToLatLng(nwPoint);
+      const bottomRightCoords = map.containerPointToLatLng(sePoint);
+      // Coordinate bounding box of where we want to be:
+      const bounds = L.latLngBounds(topLeftCoords, bottomRightCoords);
+      // Cache the origin point of the cell for later (rounding errrors);
+      caputreOrigins.push(nwPoint);
+      cells.push(bounds);
+    }
+  }
+
+  logRenderStep("Rendering cells");
+
+  // Render each cell:
+  let count = 0;
+  for(const bounds of cells) {
+    map.fitBounds(bounds);
+    // FIXME: this is potentially sinister: if view_complete doesn't fire (or fires immediately), it will hang forever.
+    scene.requestRedraw();
+    await awaitViewComplete();
+    await waitForSeconds(0.5);
+    // Cache the screenshot
+    const renderedCell = await scene.screenshot();
+    captures[count] = renderedCell.url;
+    // saveAs(renderedCell.blob, `render-cell-${count}.png`);
+    console.log(`Cell ${count} rendered`);
+    count++
+  }
+
+  logRenderStep("Building final image");
+
+  // Stitch the image together
+  const renderCanvas = document.createElement('canvas');
+  renderCanvas.id = "renderCanvas";
+  renderCanvas.width = outputX;
+  renderCanvas.height = outputY;
+  const renderContext = renderCanvas.getContext("2d");
+
+  for(let i = 0; i < captures.length; i++) {
+    const xPixel = caputreOrigins[i].x * zoomRender;
+    const yPixel = caputreOrigins[i].y * zoomRender;
+    await addImageToCanvas(renderContext, captures[i], xPixel, yPixel);
+    console.log("added image to canvas");
+  }
+
+  logRenderStep("Saving render");
+  const blob = await getCanvasBlob(renderCanvas);
+  saveAs(blob, `${renderName.name ?? 'render'}.png`);
+
+  // Clean up:
+  logRenderStep("Cleaning up");
+  map.fitBounds(originalBounds);
+  scene.requestRedraw();
+  await waitForSeconds(0.5);
+  gui.autoexpose = preRenderAutoExposureState;
+  alert("Render complete!");
+}
+
+function waitForSeconds(seconds) {
+  return new Promise((resolve, reject) => {
+    setTimeout(resolve, seconds*1000);
+  });
+}
+
+
+function awaitViewComplete() {
+  return new Promise((resolve, reject) => {
+    scene.subscribe({
+      view_complete: () => {resolve();}
+    })
+  });  
+}
+
+// Note: x and y on canvas start top left.
+function addImageToCanvas(ctx, src, x, y) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.src = src;
+    img.onload = function() {
+      ctx.drawImage(img, x, y);
+      resolve();
+    }
+  })
+}
+
+function getCanvasBlob(canvasElement) {
+  return new Promise((resolve, reject) => {
+    canvasElement.toBlob(function(blob) {
+      resolve(blob);
+    });
+  });
+}
+
+function logRenderStep(title) {
+  console.log("=========================");
+  console.log(title);
+  console.log("=========================");
+}
+
 window.stop = stop;
 window.go = go;
 
@@ -415,6 +582,7 @@ window.go = go;
             // document.body.appendChild(tempCanvas);
             // tempCanvas.style.position = "absolute";
             // tempCanvas.style.zIndex = 10000;
+
             tempCanvas.width = scene.canvas.width/tempFactor; 
             tempCanvas.height = scene.canvas.height/tempFactor;
 
