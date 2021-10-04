@@ -1,7 +1,7 @@
 sources:
     elevation:
         type: Raster
-        url: https://tile.nextzen.org/tilezen/terrain/v1/256/terrarium/{z}/{x}/{y}.png
+        url: https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png
         max_zoom: 14
         url_params:
             api_key: dmlO1fVQRPKI-GrVIYJ1YA
