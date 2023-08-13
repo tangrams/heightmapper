@@ -337,9 +337,10 @@ map = (function () {
     });
     
     gui.renderName = renderName.name;
-    gui.add(gui, 'renderName').name('Render Name').onChange(function(value) {
+    let rendernameInput = gui.add(gui, 'renderName').name('Render Name').onChange(function(value) {
       renderName.name = value;
     });
+    rendernameInput.domElement.id = 'renderName';
     
     gui.render = function () {
       renderView();
@@ -553,7 +554,7 @@ map = (function () {
   document.onkeydown = function (e) {
     e = e || window.event;
     // listen for 'h'
-    if (e.which == 72 && document.activeElement != document.getElementsByClassName('leaflet-pelias-input')[0]) {
+    if (e.which == 72 && document.activeElement != document.querySelector('#renderName>input')) {
       // toggle UI
       var display = map._controlContainer.style.display;
       map._controlContainer.style.display = (display === "none") ? "block" : "none";
