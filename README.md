@@ -27,11 +27,15 @@ Uses [Mapzen's](http://mapzen.com/tangrams/tangram) global [elevation service](h
 >
 > Do not resize the view or move the map during render as this will interfere with the render process.
 
+### Box Mode
+- Adds a rectangular bounding box, for exporting the heightmap of a lat-lon bounded region.
+- Box supports rotation, and works with rendering.
+- If Box is active, only the region inside the box will be in the final output of render.
 ### Todo
 
 - add a GeoTIFF export option which includes metadata
 - fix Render Multiplier issue when the view bounds exceeds the tile latitude limit.
-- **Super Extra Credit:** further export options including lat/lon bounding boxes, country/boundary masking using OSM vector tiles
+- **Super Extra Credit:** further export options including ~~lat/lon bounding boxes~~, country/boundary masking using OSM vector tiles
 
 ### To run locally:
 
