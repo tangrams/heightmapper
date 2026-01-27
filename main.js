@@ -4,6 +4,7 @@
 map = (function () {
   'use strict';
   
+  var isUpdatingGUI = false;
   var map_start_location = [0, 0, 2];
   var global_min = 0;
   var global_max = 8900;
@@ -245,9 +246,272 @@ map = (function () {
   
   let hash = new L.Hash(map);
 
+  /*** Bounding Box Logic ***/
+  var box = {
+    active: false,
+    center: { lat: 0.0001, lng: 0.0001 },
+    width: 16000,
+    height: 16000,
+    rotation: 0,
+    lockRatio: false
+  };
+  // Using leaflet's polygon for creating box
+  var boxPoly = L.polygon([], { color: '#ff0000', fill: false, weight: 2 });
+  
+  // Box Dragging Logic
+  var isDraggingBox = false;
+  var boxDragStartPoint = null; // Pixel point
+  var boxDragStartCenter = null; // LatLng
+
+  function initBoxInteractions() {
+      boxPoly.on('mousedown', function(e) {
+          if (!box.active) return;
+          isDraggingBox = true;
+          map.dragging.disable();
+          boxDragStartPoint = e.containerPoint;
+          boxDragStartCenter = L.latLng(box.center);
+          L.DomUtil.addClass(map._container, 'leaflet-crosshair');
+      });
+
+      boxPoly.on('mouseover', function(e) {
+         if (box.active) {
+            e.target._path.style.cursor = 'move';
+         }
+      });
+  }
+  
+  // Global map handlers for dragging
+  map.on('mousemove', function(e) {
+      if (isDraggingBox && box.active) {
+          var currentPoint = e.containerPoint;
+          var dx = currentPoint.x - boxDragStartPoint.x;
+          var dy = currentPoint.y - boxDragStartPoint.y;
+          
+          // Convert drag start center to pixel, add delta, convert back
+          var startPx = map.latLngToContainerPoint(boxDragStartCenter);
+          var newPx = L.point(startPx.x + dx, startPx.y + dy);
+          var newCenter = map.containerPointToLatLng(newPx);
+          
+          box.center.lat = newCenter.lat;
+          box.center.lng = newCenter.lng;
+          updateBoxVisual();
+      }
+  });
+  
+  map.on('mouseup', function(e) {
+      if (isDraggingBox) {
+          isDraggingBox = false;
+          map.dragging.enable();
+          L.DomUtil.removeClass(map._container, 'leaflet-crosshair');
+          updateBoxGUI();
+      }
+  });
+
+  function getBoxCorners() {
+      if (!map) return [];
+      var centerPoint = map.options.crs.project(L.latLng(box.center));
+      var w2 = box.width / 2;
+      var h2 = box.height / 2;
+      var rad = box.rotation * (Math.PI / 180);
+      var cos = Math.cos(rad);
+      var sin = Math.sin(rad);
+
+      var corners = [
+        { x: -w2, y: h2 },
+        { x: w2, y: h2 },
+        { x: w2, y: -h2 },
+        { x: -w2, y: -h2 }
+      ];
+
+      var rotated = corners.map(function(p) {
+        return {
+          x: p.x * cos - p.y * sin,
+          y: p.x * sin + p.y * cos
+        };
+      });
+
+      return rotated.map(function(p) {
+        return map.options.crs.unproject(L.point(centerPoint.x + p.x, centerPoint.y + p.y));
+      });
+  }
+
+  function updateBoxVisual() {
+    if (!box.active) {
+      if (map.hasLayer(boxPoly)) map.removeLayer(boxPoly);
+      return;
+    }
+    if (!map.hasLayer(boxPoly)) {
+        map.addLayer(boxPoly);
+        initBoxInteractions(); // Ensure handlers are attached
+    }
+    
+    var corners = getBoxCorners();
+    var latlngs = corners.map(function(c) { return [c.lat, c.lng]; });
+    boxPoly.setLatLngs(latlngs);
+  }
+
+  function updateBoxGUI() {
+    if (isUpdatingGUI) return; // Exit if we are already in an update cycle
+    
+    isUpdatingGUI = true;
+    
+    // Iterate through our stored controllers and call our new custom updateDisplay
+    for (let key in boxGUI._controllers) {
+        if (boxGUI._controllers[key]) {
+            boxGUI._controllers[key].updateDisplay();
+        }
+    }
+    
+    isUpdatingGUI = false;
+}
+
+  function wrapLat(lat) {
+      var v = (lat + 90) % 180;
+      if (v < 0) v += 180;
+      return v - 90;
+  }
+
+  function wrapLng(lng) {
+      var v = (lng + 180) % 360;
+      if (v < 0) v += 360;
+      return v - 180;
+  }
+
+  var boxGUI = {
+    get active() { return box.active; },
+    set active(v) { box.active = v; updateBoxVisual(); },
+    
+    get lockRatio() { return box.lockRatio; },
+    set lockRatio(v) { box.lockRatio = v; },
+    
+    get rotation() { return box.rotation; },
+    set rotation(v) { 
+        console.log(`boxGUI.rotation SET: ${v} (current box.rotation: ${box.rotation})`);
+        box.rotation = v; 
+        updateBoxVisual(); 
+        updateBoxGUI();
+    },
+    
+    get ratio() { return box.width / box.height; },
+    set ratio(v) { 
+        console.log(`boxGUI.ratio SET: ${v}`);
+        box.height = box.width / v;
+        updateBoxVisual();
+        updateBoxGUI();
+    },
+
+    get width() { return box.width; },
+    set width(v) {
+        console.log(`boxGUI.width SET: ${v} (current box.width: ${box.width})`);
+        if (box.lockRatio) {
+             var r = box.width / box.height;
+             box.width = v;
+             box.height = v / r;
+        } else {
+             box.width = v;
+        }
+        updateBoxVisual();
+        updateBoxGUI();
+    },
+    
+    get height() { return box.height; },
+    set height(v) {
+        console.log(`boxGUI.height SET: ${v} (current box.height: ${box.height})`);
+        if (box.lockRatio) {
+            var r = box.width / box.height;
+            box.height = v;
+            box.width = v * r;
+        } else {
+            box.height = v;
+        }
+        updateBoxVisual();
+        updateBoxGUI();
+    },
+
+    get topLat() { return getBoxCorners()[0].lat; },
+    set topLat(v) { 
+        console.log(`boxGUI.topLat SET: ${v}`);
+        v = wrapLat(v);
+        var oldTL = getBoxCorners()[0];
+        box.center.lat += (v - oldTL.lat);
+        updateBoxVisual();
+        updateBoxGUI();
+    },
+    
+    get topLng() { return getBoxCorners()[0].lng; },
+    set topLng(v) {
+        console.log(`boxGUI.topLng SET: ${v}`);
+        v = wrapLng(v);
+        var oldTL = getBoxCorners()[0];
+        box.center.lng += (v - oldTL.lng);
+        updateBoxVisual();
+        updateBoxGUI();
+    },
+    
+    get bottomLat() { return getBoxCorners()[2].lat; },
+    set bottomLat(v) {
+        console.log(`boxGUI.bottomLat SET: ${v}`);
+        v = wrapLat(v);
+        if (box.rotation === 0) {
+             var tl = getBoxCorners()[0];
+             var br = getBoxCorners()[2];
+             var newBR = L.latLng(v, br.lng);
+             
+             var tlm = map.options.crs.project(tl);
+             var brm = map.options.crs.project(newBR);
+             
+             box.width = Math.abs(brm.x - tlm.x);
+             box.height = Math.abs(brm.y - tlm.y);
+             var centerM = L.point((tlm.x + brm.x)/2, (tlm.y + brm.y)/2);
+             var c = map.options.crs.unproject(centerM);
+             box.center = {lat: c.lat, lng: c.lng};
+        } else {
+             var old = getBoxCorners()[2];
+             box.center.lat += (v - old.lat);
+        }
+        updateBoxVisual();
+        updateBoxGUI();
+    },
+    
+    get bottomLng() { return getBoxCorners()[2].lng; },
+    set bottomLng(v) {
+         console.log(`boxGUI.bottomLng SET: ${v}`);
+         v = wrapLng(v);
+         if (box.rotation === 0) {
+             var tl = getBoxCorners()[0];
+             var br = getBoxCorners()[2];
+             var newBR = L.latLng(br.lat, v);
+             
+             var tlm = map.options.crs.project(tl);
+             var brm = map.options.crs.project(newBR);
+             
+             box.width = Math.abs(brm.x - tlm.x);
+             box.height = Math.abs(brm.y - tlm.y);
+             var centerM = L.point((tlm.x + brm.x)/2, (tlm.y + brm.y)/2);
+             var c = map.options.crs.unproject(centerM);
+             box.center = {lat: c.lat, lng: c.lng};
+        } else {
+             var old = getBoxCorners()[2];
+             box.center.lng += (v - old.lng);
+        }
+        updateBoxVisual();
+        updateBoxGUI();
+    },
+    centerBox() {
+        var c = map.getCenter();
+        box.center = { lat: c.lat, lng: c.lng };
+        box.active = true;
+        updateBoxVisual();
+        updateBoxGUI();
+    }
+  };
+
   // Create dat GUI
   var gui;
   function addGUI () {
+    // Init box center
+    var c = map.getCenter();
+    box.center = { lat: c.lat, lng: c.lng };
     gui.domElement.parentNode.style.zIndex = 5; // make sure GUI is on top of map
     window.gui = gui;
     gui.u_max = 8848.;
@@ -355,6 +619,53 @@ map = (function () {
       toggleHelp(true);
     }
     gui.add(gui, 'help');
+    
+    // Add Box Folder
+    var boxF = gui.addFolder("Box Mode");
+    window.boxFolder = boxF;
+    var activeController = boxF.add(boxGUI, 'active').name("Active");
+    
+    // Enable Box Mode when folder is opened
+    boxF.domElement.parentNode.querySelector('.title').addEventListener('click', function() {
+       setTimeout(function() {
+           if (!boxF.closed) {
+               boxGUI.active = true;
+               activeController.updateDisplay();
+           }
+       }, 50); 
+    });
+    boxF.add(boxGUI, 'centerBox').name("Center Box Here");
+    boxF.add(boxGUI, 'lockRatio').name("Lock Ratio");
+
+
+    boxGUI._controllers = {
+        topLat: boxF.add(boxGUI, 'topLat').name("Top Lat"),
+        topLng: boxF.add(boxGUI, 'topLng').name("Left Lon"),
+        bottomLat: boxF.add(boxGUI, 'bottomLat').name("Bottom Lat"),
+        bottomLng: boxF.add(boxGUI, 'bottomLng').name("Right Lon"),
+        width: boxF.add(boxGUI, 'width').name("Width (m)"),
+        height: boxF.add(boxGUI, 'height').name("Height (m)"),
+        ratio: boxF.add(boxGUI, 'ratio').name("Ratio"),
+        rotation: boxF.add(boxGUI, 'rotation', -180, 180, 0.1).name("Rotation")
+    };
+
+    // --- THE FIX FOR ROUNDING BECAUSE DAT.GUI is stupid---
+    // Force every numeric controller to stop using the internal 'smart' rounding
+    Object.values(boxGUI._controllers).forEach(controller => {
+        if (controller.property !== 'rotation' && controller.__input) {
+            controller.__precision = 4; 
+            
+            // We override the internal updateDisplay to bypass the library's math
+            controller.updateDisplay = function() {
+                const val = this.getValue();
+                // Force 4 decimals for Lat/Lng, 2 for dimensions
+                const p = (this.property.toLowerCase().includes('lat') || this.property.toLowerCase().includes('lng')) ? 4 : 2;
+                this.__input.value = (typeof val === 'number') ? val.toFixed(p) : val;
+                return this;
+            };
+        }
+    });
+    updateBoxGUI();
     // set scale factor text field to be uneditable but still selectable (for copying)
     gui.__controllers[2].domElement.firstChild.setAttribute("readonly", true);
     
@@ -383,6 +694,18 @@ map = (function () {
       return;
     }
     
+    const boxMode = box.active;
+    var containerSize, latlngs,boxBounds;
+    if (boxMode){
+      boxBounds = boxPoly.getBounds();
+      latlngs = getBoxCorners().map(function(c) { return [c.lat, c.lng]; });
+
+      map.fitBounds(boxBounds, { animate: false });
+      var boxContainerPoints = latlngs.map(ll => map.latLngToContainerPoint(ll));
+      containerSize = map.getSize();
+      console.log("Container size")
+      console.log(containerSize)
+    }
     // Pre-redraw to make sure view is set:
     map.invalidateSize(true);
     
@@ -396,8 +719,8 @@ map = (function () {
     // Turn off auto-exposure:
     const preRenderAutoExposureState = gui.autoexpose;
     gui.autoexpose = false;
-    const widthPerCell = scene.canvas.width / zoomFactor;
-    const heightPerCell = scene.canvas.height / zoomFactor;
+    const widthPerCell = (!boxMode) ? originalX / zoomFactor: containerSize.x / zoomRender;
+    const heightPerCell = (!boxMode) ? originalY / zoomFactor: containerSize.y / zoomRender;
     const captures = [];
     const captureOrigins = [];
     // Cache all the bounding box points before moving the map for each render.
@@ -445,6 +768,7 @@ map = (function () {
     logRenderStep("Building final image");
     
     // Stitch the image together
+    const finalCanvas = document.createElement('canvas');
     const renderCanvas = document.createElement('canvas');
     renderCanvas.id = "renderCanvas";
     renderCanvas.width = outputX;
@@ -458,8 +782,39 @@ map = (function () {
       console.log("added image to canvas");
     }
     
+    if (boxMode){
+      logRenderStep("Straightening Image");
+      
+      const points = boxContainerPoints.map(p => {
+        return {
+          x: p.x * zoomFactor,
+          y: p.y * zoomFactor
+        };
+      });
+
+      // Math to find Angle and Dimensions
+      // Angle between p0 and p1 (Top edge)
+      const angle = Math.atan2(points[1].y - points[0].y, points[1].x - points[0].x);
+      
+      // Distance formula for Width and Height
+      const dist = (p1, p2) => Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+      const finalWidth = dist(points[0], points[1]);
+      const finalHeight = dist(points[1], points[2]);
+
+      // Create final straightened canvas
+      finalCanvas.width = finalWidth;
+      finalCanvas.height = finalHeight;
+      const finalCtx = finalCanvas.getContext('2d');
+      finalCtx.save();
+      finalCtx.rotate(-angle);
+      // Drawing at -points[0] effectively aligns the box's top-left corner to the canvas 0,0
+      finalCtx.drawImage(renderCanvas, -points[0].x, -points[0].y);
+      finalCtx.restore();
+    }
+
+    const saveCanvas = (!boxMode) ? renderCanvas : finalCanvas
     logRenderStep("Saving render");
-    const blob = await getCanvasBlob(renderCanvas);
+    const blob = await getCanvasBlob(saveCanvas);
     saveAs(blob, `${renderName.name ?? 'render'}.png`);
     
     // Clean up:
