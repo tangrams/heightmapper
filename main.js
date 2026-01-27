@@ -496,6 +496,13 @@ map = (function () {
         }
         updateBoxVisual();
         updateBoxGUI();
+    },
+    centerBox() {
+        var c = map.getCenter();
+        box.center = { lat: c.lat, lng: c.lng };
+        box.active = true;
+        updateBoxVisual();
+        updateBoxGUI();
     }
   };
 
@@ -504,7 +511,6 @@ map = (function () {
   function addGUI () {
     // Init box center
     var c = map.getCenter();
-    console.log(`Is it it? ${c.lat}, ${c.lng}`)
     box.center = { lat: c.lat, lng: c.lng };
     gui.domElement.parentNode.style.zIndex = 5; // make sure GUI is on top of map
     window.gui = gui;
@@ -618,7 +624,9 @@ map = (function () {
     var boxF = gui.addFolder("Box Mode");
     window.boxFolder = boxF;
     boxF.add(boxGUI, 'active').name("Active");
+    boxF.add(boxGUI, 'centerBox').name("Center Box Here");
     boxF.add(boxGUI, 'lockRatio').name("Lock Ratio");
+
 
     boxGUI._controllers = {
         topLat: boxF.add(boxGUI, 'topLat').name("Top Lat"),
@@ -676,6 +684,17 @@ map = (function () {
       return;
     }
     
+    const boxMode = box.active;
+    var containerSize, latlngs,boxBounds;
+    if (boxMode){
+      boxBounds = boxPoly.getBounds();
+      latlngs = getBoxCorners().map(function(c) { return [c.lat, c.lng]; });
+
+      map.fitBounds(boxBounds, { animate: false });
+      containerSize = map.getSize();
+      console.log("Container size")
+      console.log(containerSize)
+    }
     // Pre-redraw to make sure view is set:
     map.invalidateSize(true);
     
@@ -689,8 +708,8 @@ map = (function () {
     // Turn off auto-exposure:
     const preRenderAutoExposureState = gui.autoexpose;
     gui.autoexpose = false;
-    const widthPerCell = scene.canvas.width / zoomFactor;
-    const heightPerCell = scene.canvas.height / zoomFactor;
+    const widthPerCell = (!boxMode) ? originalX / zoomFactor: containerSize.x / zoomRender;
+    const heightPerCell = (!boxMode) ? originalY / zoomFactor: containerSize.y / zoomRender;
     const captures = [];
     const captureOrigins = [];
     // Cache all the bounding box points before moving the map for each render.
@@ -738,6 +757,7 @@ map = (function () {
     logRenderStep("Building final image");
     
     // Stitch the image together
+    const finalCanvas = document.createElement('canvas');
     const renderCanvas = document.createElement('canvas');
     renderCanvas.id = "renderCanvas";
     renderCanvas.width = outputX;
@@ -751,8 +771,43 @@ map = (function () {
       console.log("added image to canvas");
     }
     
+    if (boxMode){
+      logRenderStep("Straightening Image");
+
+      const anchorLatLng = L.latLng(boxBounds.getNorth(), boxBounds.getWest());
+      const anchorPoint = map.latLngToContainerPoint(anchorLatLng);
+      
+      const points = latlngs.map(ll => {
+        const p = map.latLngToContainerPoint(ll);
+        return {
+          x: (p.x - anchorPoint.x) * zoomFactor,
+          y: (p.y - anchorPoint.y) * zoomFactor
+        };
+      });
+
+      // Math to find Angle and Dimensions
+      // Angle between p0 and p1 (Top edge)
+      const angle = Math.atan2(points[1].y - points[0].y, points[1].x - points[0].x);
+      
+      // Distance formula for Width and Height
+      const dist = (p1, p2) => Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+      const finalWidth = dist(points[0], points[1]);
+      const finalHeight = dist(points[1], points[2]);
+
+      // Create final straightened canvas
+      finalCanvas.width = finalWidth;
+      finalCanvas.height = finalHeight;
+      const finalCtx = finalCanvas.getContext('2d');
+      finalCtx.save();
+      finalCtx.rotate(-angle);
+      // Drawing at -points[0] effectively aligns the box's top-left corner to the canvas 0,0
+      finalCtx.drawImage(renderCanvas, -points[0].x, -points[0].y);
+      finalCtx.restore();
+    }
+
+    const saveCanvas = (!boxMode) ? renderCanvas : finalCanvas
     logRenderStep("Saving render");
-    const blob = await getCanvasBlob(renderCanvas);
+    const blob = await getCanvasBlob(saveCanvas);
     saveAs(blob, `${renderName.name ?? 'render'}.png`);
     
     // Clean up:
