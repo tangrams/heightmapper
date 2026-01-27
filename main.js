@@ -623,7 +623,17 @@ map = (function () {
     // Add Box Folder
     var boxF = gui.addFolder("Box Mode");
     window.boxFolder = boxF;
-    boxF.add(boxGUI, 'active').name("Active");
+    var activeController = boxF.add(boxGUI, 'active').name("Active");
+    
+    // Enable Box Mode when folder is opened
+    boxF.domElement.parentNode.querySelector('.title').addEventListener('click', function() {
+       setTimeout(function() {
+           if (!boxF.closed) {
+               boxGUI.active = true;
+               activeController.updateDisplay();
+           }
+       }, 50); 
+    });
     boxF.add(boxGUI, 'centerBox').name("Center Box Here");
     boxF.add(boxGUI, 'lockRatio').name("Lock Ratio");
 
@@ -691,6 +701,7 @@ map = (function () {
       latlngs = getBoxCorners().map(function(c) { return [c.lat, c.lng]; });
 
       map.fitBounds(boxBounds, { animate: false });
+      var boxContainerPoints = latlngs.map(ll => map.latLngToContainerPoint(ll));
       containerSize = map.getSize();
       console.log("Container size")
       console.log(containerSize)
@@ -773,15 +784,11 @@ map = (function () {
     
     if (boxMode){
       logRenderStep("Straightening Image");
-
-      const anchorLatLng = L.latLng(boxBounds.getNorth(), boxBounds.getWest());
-      const anchorPoint = map.latLngToContainerPoint(anchorLatLng);
       
-      const points = latlngs.map(ll => {
-        const p = map.latLngToContainerPoint(ll);
+      const points = boxContainerPoints.map(p => {
         return {
-          x: (p.x - anchorPoint.x) * zoomFactor,
-          y: (p.y - anchorPoint.y) * zoomFactor
+          x: p.x * zoomFactor,
+          y: p.y * zoomFactor
         };
       });
 
